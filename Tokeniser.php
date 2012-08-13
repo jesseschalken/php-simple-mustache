@@ -236,9 +236,9 @@ final class StringScanner
       return null;
   }
 
-	public function textRemaining()
-	{
-		return $this->position < strlen( $this->string );
-	}
+  public function textRemaining()
+  {
+    return $this->position < strlen( $this->string );
+  }
 }
 
