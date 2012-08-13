@@ -34,13 +34,13 @@ final class MustacheTokeniser
 
   private function process()
   {
-    while ( $this->textRemaining() )
+    while ( $this->hasTextRemaining() )
       $this->processOne();
   }
 
-  private function textRemaining()
+  private function hasTextRemaining()
   {
-    return $this->scanner->textRemaining();
+    return $this->scanner->hasTextRemaining();
   }
 
   private function processOne()
@@ -234,7 +234,7 @@ final class StringScanner
       return null;
   }
 
-  public function textRemaining()
+  public function hasTextRemaining()
   {
     return $this->position < strlen( $this->string );
   }
