@@ -36,26 +36,26 @@ final class MustacheTokeniser
 
   private function process()
   {
-    while ( $this->doProcessStep() );
+    while ( $this->textRemaining() )
+      $this->processOne();
   }
 
-  private function doProcessStep()
+  private function textRemaining()
+  {
+    return $this->scanner->textRemaining();
+  }
+
+  private function processOne()
   {
     $this->skipToNextTagOrEof();
 
     $isStartOfLine = $this->isStartOfLine();
     $spaceBefore   = $this->scan( $this->indentRegex() );
 
-    if ( !$this->matches( $this->openTagRegex() ) )
-      return $this->handleNoTagsRemaining( $spaceBefore );
-
-    $token = $this->scanSingleTag();
-    $token = $this->handleStandaloneTag( $isStartOfLine, $spaceBefore, $token );
-
-    $this->handleChangeDelimiters( $token );
-    $this->tokens->addTag( $token );
-
-    return true;
+    if ( $this->matches( $this->openTagRegex() ) )
+      $this->handleTagFound( $isStartOfLine, $spaceBefore );
+    else
+      $this->addText( $spaceBefore . $this->scan( '.*' ) );
   }
 
   private function skipToNextTagOrEof()
@@ -64,7 +64,7 @@ final class MustacheTokeniser
     $indent  = $this->indentRegex();
     $openTag = $this->openTagRegex();
 
-    $this->addText( $this->scan( ".*?((?<=$newLine|)(?=$indent$openTag)|$)" ) );
+    $this->addText( $this->scan( ".*?(?<=$newLine|)(?=$indent$openTag|$)" ) );
   }
 
   private function isStartOfLine()
@@ -82,12 +82,13 @@ final class MustacheTokeniser
     return $this->escape( $this->openTag );
   }
 
-  private function handleNoTagsRemaining( $textToAdd = '' )
+  private function handleTagFound( $isStartOfLine, $spaceBefore )
   {
-    $this->addText( $textToAdd );
-    $this->addText( $this->scan( '.*' ) );
+    $token = $this->scanSingleTag();
+    $token = $this->handleStandaloneTag( $isStartOfLine, $spaceBefore, $token );
 
-    return false;
+    $this->handleChangeDelimiters( $token );
+    $this->tokens->addTag( $token );
   }
 
   private function scanSingleTag()
@@ -234,5 +235,10 @@ final class StringScanner
     else
       return null;
   }
+
+	public function textRemaining()
+	{
+		return $this->position < strlen( $this->string );
+	}
 }
 
