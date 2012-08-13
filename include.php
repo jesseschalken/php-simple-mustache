@@ -1,8 +1,10 @@
 <?php
 
-require_once __DIR__ . '/Mustache.php';
-require_once __DIR__ . '/TestFramework.php';
-require_once __DIR__ . '/Test.php';
-require_once __DIR__ . '/Tokeniser.php';
-require_once __DIR__ . '/Tokens.php';
+$dir = dirname( __FILE__ );
+
+require_once "$dir/Mustache.php";
+require_once "$dir/TestFramework.php";
+require_once "$dir/Test.php";
+require_once "$dir/Tokeniser.php";
+require_once "$dir/Tokens.php";
 

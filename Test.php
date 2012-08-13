@@ -29,7 +29,7 @@ class MustacheTest extends Test
 
   private function getSpecFiles()
   {
-    return new RegexIterator( new DirectoryIterator( __DIR__ . "/spec/specs" ), '/^[^~].*\.json$/' );
+    return new RegexIterator( new DirectoryIterator( dirname( __FILE__ ) . "/spec/specs" ), '/^[^~].*\.json$/' );
   }
 }
 
