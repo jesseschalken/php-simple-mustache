@@ -9,7 +9,7 @@ final class MustacheTokeniser
     $tokeniser->tokens  = new MustacheTokenStream;
     $tokeniser->process();
 
-    assert( $tokeniser->tokens->getOriginalText() === $template );
+    assert( $tokeniser->tokens->originalText() === $template );
 
     return $tokeniser->tokens;
   }
@@ -22,25 +22,10 @@ final class MustacheTokeniser
 
   private function __construct() {}
 
-  private function newLineRegex()
-  {
-    return "\r\n|\n|^";
-  }
-
-  private function closeTagRegex()
-  {
-    return $this->escape( $this->closeTag );
-  }
-
   private function process()
   {
     while ( $this->hasTextRemaining() )
       $this->processOne();
-  }
-
-  private function hasTextRemaining()
-  {
-    return $this->scanner->hasTextRemaining();
   }
 
   private function processOne()
@@ -48,12 +33,12 @@ final class MustacheTokeniser
     $this->skipToNextTagOrEof();
 
     $isStartOfLine = $this->isStartOfLine();
-    $indent        = $this->scan( $this->indentRegex() );
+    $indent        = $this->scanText( $this->indentRegex() );
 
-    if ( $this->matches( $this->openTagRegex() ) )
+    if ( $this->textMatches( $this->openTagRegex() ) )
       $this->handleTagFound( $isStartOfLine, $indent );
     else
-      $this->addText( $indent . $this->scan( '.*' ) );
+      $this->addText( $indent . $this->scanText( '.*' ) );
   }
 
   private function skipToNextTagOrEof()
@@ -62,22 +47,7 @@ final class MustacheTokeniser
     $indent  = $this->indentRegex();
     $openTag = $this->openTagRegex();
 
-    $this->addText( $this->scan( ".*?(?<=$newLine|)(?=$indent$openTag|$)" ) );
-  }
-
-  private function isStartOfLine()
-  {
-    return $this->matches( "(?<=" . $this->newLineRegex() . ")" );
-  }
-
-  private function indentRegex()
-  {
-    return "[\t ]*";
-  }
-
-  private function openTagRegex()
-  {
-    return $this->escape( $this->openTag );
+    $this->addText( $this->scanText( ".*?(?<=$newLine|)(?=$indent$openTag|$)" ) );
   }
 
   private function handleTagFound( $isStartOfLine, $indent )
@@ -92,13 +62,13 @@ final class MustacheTokeniser
   private function scanSingleTag()
   {
     $token = new MustacheTokenTag;
-    $token->openTag       = $this->scan( $this->openTagRegex() );
-    $token->type          = $this->scan( $this->tagTypeRegex() );
-    $token->paddingBefore = $this->scan( ' *' );
-    $token->content       = $this->scan( $this->tagContentRegex( $token->type ) );
-    $token->paddingAfter  = $this->scan( ' *' );
-    $token->closeType     = $this->scan( $this->closeTypeRegex( $token->type ) );
-    $token->closeTag      = $this->scan( $this->closeTagRegex() );
+    $token->openTag       = $this->scanText( $this->openTagRegex() );
+    $token->type          = $this->scanText( $this->tagTypeRegex() );
+    $token->paddingBefore = $this->scanText( ' *' );
+    $token->content       = $this->scanText( $this->tagContentRegex( $token->type ) );
+    $token->paddingAfter  = $this->scanText( ' *' );
+    $token->closeType     = $this->scanText( $this->closeTypeRegex( $token->type ) );
+    $token->closeTag      = $this->scanText( $this->closeTagRegex() );
 
     return $token;
   }
@@ -106,7 +76,7 @@ final class MustacheTokeniser
   private function handleStandaloneTag( $isStartOfLine, $indent, MustacheTokenTag $token )
   {
     if ( $this->isStandaloneTag( $isStartOfLine, $token->type ) )
-      $token = $this->convertToStandalone( $token, $indent );
+      $token = $this->convertToStandaloneTag( $token, $indent );
     else
       $this->addText( $indent );
 
@@ -117,19 +87,14 @@ final class MustacheTokeniser
   {
     return $isStartOfLine
       && $this->typeAllowsStandalone( $type )
-      && $this->matches( $this->eolSpaceRegex() );
+      && $this->textMatches( $this->eolSpaceRegex() );
   }
 
-  private function eolSpaceRegex()
-  {
-    return $this->indentRegex() . "(" . $this->newLineRegex() . "|$)";
-  }
-
-  private function convertToStandalone( MustacheTokenTag $token, $indent )
+  private function convertToStandaloneTag( MustacheTokenTag $token, $indent )
   {
     $token = $token->toStandalone();
     $token->spaceBefore = $indent;
-    $token->spaceAfter  = $this->scan( $this->eolSpaceRegex() );
+    $token->spaceAfter  = $this->scanText( $this->eolSpaceRegex() );
 
     return $token;
   }
@@ -138,6 +103,49 @@ final class MustacheTokeniser
   {
     if ( $token->type == '=' )
       list( $this->openTag, $this->closeTag ) = explode( ' ', $token->content );
+  }
+
+  private function hasTextRemaining()
+  {
+    return $this->scanner->hasTextRemaining();
+  }
+
+  private function isStartOfLine()
+  {
+    return $this->textMatches( "(?<=" . $this->newLineRegex() . ")" );
+  }
+
+  private function indentRegex()
+  {
+    return "[\t ]*";
+  }
+
+  private function newLineRegex()
+  {
+    return "\r\n|\n|^";
+  }
+
+  private function openTagRegex()
+  {
+    return $this->escape( $this->openTag );
+  }
+
+  private function closeTagRegex()
+  {
+    return $this->escape( $this->closeTag );
+  }
+
+  private function eolSpaceRegex()
+  {
+    return $this->indentRegex() . "(" . $this->newLineRegex() . "|$)";
+  }
+
+  private function closeTypeRegex( $type )
+  {
+    if ( $type == '{' )
+      $type = '}';
+
+    return '(' . $this->escape( $type ) . ')?';
   }
 
   private function tagTypeRegex()
@@ -151,14 +159,6 @@ final class MustacheTokeniser
       return ".*?(?=" . $this->closeTypeRegex( $type ) . $this->closeTagRegex() . ")";
     else
       return '(\w|[?!\/.-])*';
-  }
-
-  private function closeTypeRegex( $type )
-  {
-    if ( $type == '{' )
-      $type = '}';
-
-    return '(' . $this->escape( $type ) . ')?';
   }
 
   private function typeHasAnyContent( $type )
@@ -176,14 +176,14 @@ final class MustacheTokeniser
     $this->tokens->addText( $text );
   }
 
-  private function matches( $regex )
+  private function textMatches( $regex )
   {
-    return $this->scanner->matches( $regex );
+    return $this->scanner->textMatches( $regex );
   }
 
-  private function scan( $regex )
+  private function scanText( $regex )
   {
-    return $this->scanner->scan( $regex );
+    return $this->scanner->scanText( $regex );
   }
 
   private function escape( $text )
@@ -207,9 +207,9 @@ final class StringScanner
     return preg_quote( $text, '/' );
   }
 
-  public function scan( $regex )
+  public function scanText( $regex )
   {
-    $match = $this->match( $regex );
+    $match = $this->matchText( $regex );
 
     if ( $match === null )
       throw new Exception( "Regex " . json_encode( $regex ) . " failed at offset $this->position" );
@@ -219,12 +219,12 @@ final class StringScanner
     return $match;
   }
 
-  public function matches( $regex )
+  public function textMatches( $regex )
   {
-    return $this->match( $regex ) !== null;
+    return $this->matchText( $regex ) !== null;
   }
 
-  private function match( $regex )
+  private function matchText( $regex )
   {
     preg_match( "/$regex/su", $this->string, $matches, PREG_OFFSET_CAPTURE, $this->position );
 

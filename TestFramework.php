@@ -6,13 +6,13 @@ abstract class Test
   {
     $this->runSelf( $indent );
 
-    foreach ( $this->getSubTests() as $test )
+    foreach ( $this->subTests() as $test )
       $test->run( "$indent  " );
   }
 
   private function runSelf( $indent )
   {
-    $this->printIndented( $indent, "Testing " . $this->getName() . "...\n" );
+    $this->printIndented( $indent, "Testing " . $this->name() . "...\n" );
 
     try
     {
@@ -22,7 +22,7 @@ abstract class Test
     {
       $this->printIndented( "$indent  ", ""
         . "\n"
-        . $this->getDescription()
+        . $this->description()
         . "\n"
         . $e->__toString() . "\n"
         . "\n" );
@@ -34,7 +34,7 @@ abstract class Test
     print $this->indent( $text, $indent );
   }
 
-  protected function getSubTests()
+  protected function subTests()
   {
     return array();
   }
@@ -43,8 +43,8 @@ abstract class Test
   {
   }
 
-  protected abstract function getName();
-  protected abstract function getDescription();
+  protected abstract function name();
+  protected abstract function description();
 
   protected final function assertEquals( $actual, $expected )
   {

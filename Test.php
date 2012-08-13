@@ -2,21 +2,21 @@
 
 class MustacheTest extends Test
 {
-  protected function getName()
+  protected function name()
   {
     return 'Official Mustache spec';
   }
 
-  protected function getDescription()
+  protected function description()
   {
     return "These are the official mustache specs\n";
   }
 
-  protected function getSubTests()
+  protected function subTests()
   {
     $tests = array();
 
-    foreach ( $this->getSpecFiles() as $file )
+    foreach ( $this->specFiles() as $file )
     {
       $test = new MustacheSpecFile;
       $test->specFileName = $file->getFilename();
@@ -27,7 +27,7 @@ class MustacheTest extends Test
     return $tests;
   }
 
-  private function getSpecFiles()
+  private function specFiles()
   {
     return new RegexIterator( new DirectoryIterator( dirname( __FILE__ ) . "/spec/specs" ), '/^[^~].*\.json$/' );
   }
@@ -38,17 +38,17 @@ class MustacheSpecFile extends Test
   public $specFileName;
   public $specFileJson;
 
-  protected function getName()
+  protected function name()
   {
     return $this->specFileName;
   }
 
-  protected function getDescription()
+  protected function description()
   {
     return $this->specFileJson->overview;
   }
 
-  protected function getSubTests()
+  protected function subTests()
   {
     $tests = array();
 
@@ -67,12 +67,12 @@ class MustacheTestCase extends Test
 {
   public $jsonTest;
 
-  protected function getName()
+  protected function name()
   {
     return $this->jsonTest->name;
   }
 
-  protected function getDescription()
+  protected function description()
   {
     return $this->jsonTest->desc . "\n";
   }

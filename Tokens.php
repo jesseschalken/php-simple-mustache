@@ -2,12 +2,12 @@
 
 abstract class MustacheTokenVisitor
 {
-  public abstract function text( MustacheTokenText $token );
-  public abstract function tag( MustacheTokenTag $token );
+  public abstract function visitText( MustacheTokenText $token );
+  public abstract function visitTag( MustacheTokenTag $token );
 
-  public function tagStandalone( MustacheTokenTagStandalone $token )
+  public function visitStandaloneTag( MustacheTokenStandaloneTag $token )
   {
-    return $this->tag( $token );
+    return $this->visitTag( $token );
   }
 }
 
@@ -15,17 +15,17 @@ abstract class MustacheToken
 {
   public abstract function visit( MustacheTokenVisitor $visitor );
 
-  public abstract function getOriginalText();
+  public abstract function originalText();
 }
 
 class MustacheTokenText extends MustacheToken
 {
   public function visit( MustacheTokenVisitor $visitor )
   {
-    return $visitor->text( $this );
+    return $visitor->visitText( $this );
   }
 
-  public function getOriginalText()
+  public function originalText()
   {
     return $this->text;
   }
@@ -37,7 +37,7 @@ class MustacheTokenTag extends MustacheToken
 {
   public function visit( MustacheTokenVisitor $visitor )
   {
-    return $visitor->tag( $this );
+    return $visitor->visitTag( $this );
   }
 
   public $openTag;
@@ -48,7 +48,7 @@ class MustacheTokenTag extends MustacheToken
   public $closeType;
   public $closeTag;
 
-  public function getOriginalText()
+  public function originalText()
   {
     return $this->openTag . $this->type . $this->paddingBefore . $this->content 
       . $this->paddingAfter . $this->closeType . $this->closeTag;
@@ -56,7 +56,7 @@ class MustacheTokenTag extends MustacheToken
 
   public function toStandalone()
   {
-    $token = new MustacheTokenTagStandalone;
+    $token = new MustacheTokenStandaloneTag;
 
     $token->openTag       = $this->openTag;
     $token->type          = $this->type;
@@ -70,16 +70,16 @@ class MustacheTokenTag extends MustacheToken
   }
 }
 
-class MustacheTokenTagStandalone extends MustacheTokenTag
+class MustacheTokenStandaloneTag extends MustacheTokenTag
 {
   public function visit( MustacheTokenVisitor $visitor )
   {
-    return $visitor->tagStandalone( $this );
+    return $visitor->visitStandaloneTag( $this );
   }
 
-  public function getOriginalText()
+  public function originalText()
   {
-    return $this->spaceBefore . parent::getOriginalText() . $this->spaceAfter;
+    return $this->spaceBefore . parent::originalText() . $this->spaceAfter;
   }
 
   public $spaceBefore;
@@ -101,12 +101,12 @@ final class MustacheTokenStream implements IteratorAggregate
     return new ArrayIterator( $this->tokens );
   }
 
-  public function getOriginalText()
+  public function originalText()
   {
     $text = '';
 
     foreach ( $this as $token )
-      $text .= $token->getOriginalText();
+      $text .= $token->originalText();
 
     return $text;
   }
