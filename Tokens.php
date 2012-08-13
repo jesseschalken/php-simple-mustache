@@ -5,7 +5,7 @@ abstract class MustacheTokenVisitor
   public abstract function text( MustacheTokenText $token );
   public abstract function tag( MustacheTokenTag $token );
 
-  public function wholeLineTag( MustacheTokenTagStandalone $token )
+  public function tagStandalone( MustacheTokenTagStandalone $token )
   {
     return $this->tag( $token );
   }
@@ -74,7 +74,7 @@ class MustacheTokenTagStandalone extends MustacheTokenTag
 {
   public function visit( MustacheTokenVisitor $visitor )
   {
-    return $visitor->whileLineTag( $this );
+    return $visitor->tagStandalone( $this );
   }
 
   public function getOriginalText()

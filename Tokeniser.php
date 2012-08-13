@@ -4,7 +4,9 @@ final class MustacheTokeniser
 {
   public static function tokenise( $template )
   {
-    $tokeniser = new self( $template );
+    $tokeniser = new self;
+    $tokeniser->scanner = new StringScanner( $template );
+    $tokeniser->tokens  = new MustacheTokenStream;
     $tokeniser->process();
 
     assert( $tokeniser->tokens->getOriginalText() === $template );
@@ -12,17 +14,13 @@ final class MustacheTokeniser
     return $tokeniser->tokens;
   }
 
-  private function __construct( $template )
-  {
-    $this->scanner = new StringScanner( $template );
-    $this->tokens  = new MustacheTokenStream;
-  }
+  private $scanner;
+  private $tokens;
 
   private $openTag  = '{{';
   private $closeTag = '}}';
 
-  private $tokens;
-  private $scanner;
+  private function __construct() {}
 
   private function newLineRegex()
   {
@@ -50,12 +48,12 @@ final class MustacheTokeniser
     $this->skipToNextTagOrEof();
 
     $isStartOfLine = $this->isStartOfLine();
-    $spaceBefore   = $this->scan( $this->indentRegex() );
+    $indent        = $this->scan( $this->indentRegex() );
 
     if ( $this->matches( $this->openTagRegex() ) )
-      $this->handleTagFound( $isStartOfLine, $spaceBefore );
+      $this->handleTagFound( $isStartOfLine, $indent );
     else
-      $this->addText( $spaceBefore . $this->scan( '.*' ) );
+      $this->addText( $indent . $this->scan( '.*' ) );
   }
 
   private function skipToNextTagOrEof()
@@ -82,10 +80,10 @@ final class MustacheTokeniser
     return $this->escape( $this->openTag );
   }
 
-  private function handleTagFound( $isStartOfLine, $spaceBefore )
+  private function handleTagFound( $isStartOfLine, $indent )
   {
     $token = $this->scanSingleTag();
-    $token = $this->handleStandaloneTag( $isStartOfLine, $spaceBefore, $token );
+    $token = $this->handleStandaloneTag( $isStartOfLine, $indent, $token );
 
     $this->handleChangeDelimiters( $token );
     $this->tokens->addTag( $token );
@@ -105,12 +103,12 @@ final class MustacheTokeniser
     return $token;
   }
 
-  private function handleStandaloneTag( $isStartOfLine, $spaceBefore, MustacheTokenTag $token )
+  private function handleStandaloneTag( $isStartOfLine, $indent, MustacheTokenTag $token )
   {
     if ( $this->isStandaloneTag( $isStartOfLine, $token->type ) )
-      $token = $this->convertToStandalone( $token, $spaceBefore );
+      $token = $this->convertToStandalone( $token, $indent );
     else
-      $this->addText( $spaceBefore );
+      $this->addText( $indent );
 
     return $token;
   }
@@ -127,10 +125,10 @@ final class MustacheTokeniser
     return $this->indentRegex() . "(" . $this->newLineRegex() . "|$)";
   }
 
-  private function convertToStandalone( MustacheTokenTag $token, $spaceBefore )
+  private function convertToStandalone( MustacheTokenTag $token, $indent )
   {
     $token = $token->toStandalone();
-    $token->spaceBefore = $spaceBefore;
+    $token->spaceBefore = $indent;
     $token->spaceAfter  = $this->scan( $this->eolSpaceRegex() );
 
     return $token;
