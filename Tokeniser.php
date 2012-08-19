@@ -10,7 +10,6 @@ final class MustacheTokeniser
     $tokeniser->process();
 
     assert( $tokeniser->tokens->originalText() === $template );
-    var_dump( $tokeniser );
 
     return $tokeniser->tokens;
   }
