@@ -93,19 +93,6 @@ class MustacheTokenTag extends MustacheToken
   }
 }
 
-class MustacheTokenStandaloneTag extends MustacheTokenTag
-{
-  public function visit( MustacheTokenVisitor $visitor )
-  {
-    return $visitor->visitStandaloneTag( $this );
-  }
-
-  public function originalText()
-  {
-    return $this->spaceBefore . parent::originalText() . $this->spaceAfter;
-  }
-}
-
 final class MustacheTokenStream implements IteratorAggregate
 {
   private $tokens           = array();
