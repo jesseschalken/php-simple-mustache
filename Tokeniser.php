@@ -65,15 +65,6 @@ final class MustacheTokeniser
       && $this->textMatches( $this->eolSpaceRegex() );
   }
 
-  public function convertToStandaloneTag( MustacheTokenTag $token, $indent )
-  {
-    $token = $token->toStandalone();
-    $token->spaceBefore = $indent;
-    $token->spaceAfter  = $this->scanText( $this->eolSpaceRegex() );
-
-    return $token;
-  }
-
   public function handleChangeDelimiters( MustacheTokenTag $token )
   {
     if ( $token->type() == '=' )
