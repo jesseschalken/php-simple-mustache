@@ -4,7 +4,7 @@ final class Mustache
 {
   public static function run( $template, $data )
   {
-    $tokens = MustacheTokeniser::tokenise( $template );
+    $document = MustacheParser::parse( $template );
 
     // TODO
     return null;
