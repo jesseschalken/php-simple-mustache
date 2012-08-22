@@ -4,6 +4,11 @@ class MustacheNodeVisitorDumpAst extends MustacheNodeVisitor
 {
   private $indentLevel = 0;
 
+  public static function dumpDocument( MustacheDocument $document )
+  {
+    return join( '', $document->acceptVisitor( new self ) );
+  }
+
   private function dump( $string )
   {
     return json_encode( (string) $string );

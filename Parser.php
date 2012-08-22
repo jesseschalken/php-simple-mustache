@@ -8,7 +8,6 @@ final class MustacheParser
     $document = MustacheDocument::parse( $parser );
 
     assert( $document->originalText() === $template );
-    assert( $parser->scanner->isEof() );
 
     return $document;
   }
@@ -96,13 +95,6 @@ final class StringScanner
   public function textMatches( $regex )
   {
     return $this->matchText( $regex ) !== null;
-  }
-
-  public function isEof()
-  {
-    assert( $this->position <= strlen( $this->string ) );
-
-    return $this->position == strlen( $this->string );
   }
 
   private function matchText( $regex )

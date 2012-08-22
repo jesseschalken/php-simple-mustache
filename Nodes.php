@@ -15,11 +15,6 @@ abstract class MustacheNode
   public abstract function acceptVisitor( MustacheNodeVisitor $visitor );
   public abstract function originalText();
 
-  public final function dumpAst()
-  {
-    return $this->acceptVisitor( new MustacheNodeVisitorDumpAst );
-  }
-
   protected function __construct() {}
 }
 
@@ -68,12 +63,9 @@ final class MustacheNodeSetDelimiters extends MustacheNodeTag
 
     $contentScanner = StringScanner::create( $this->tagContent() );
 
-    $this->openTag      = $contentScanner->scanText( '[^ ]+' );
+    $this->openTag      = $contentScanner->scanText( '^[^ ]+' );
     $this->innerPadding = $contentScanner->scanText( ' +' );
-    $this->closeTag     = $contentScanner->scanText( '[^ ]+' );
-
-    if ( !$contentScanner->isEof() )
-      throw new Exception( 'Failed to parse set delimiter tag contents' );
+    $this->closeTag     = $contentScanner->scanText( '[^ ]+$' );
 
     $parser->setDelimiters( $this->openTag, $this->closeTag );
   }

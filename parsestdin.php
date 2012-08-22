@@ -12,5 +12,5 @@ function exception_error_handler($errno, $errstr, $errfile, $errline ) {
 
 set_error_handler("exception_error_handler");
 
-print MustacheParser::parse( file_get_contents( 'php://stdin' ) )->dumpAst();
+print MustacheNodeVisitorDumpAst::dumpDocument( MustacheParser::parse( file_get_contents( 'php://stdin' ) ) );
 
