@@ -4,9 +4,8 @@ final class MustacheParser
 {
   public static function parse( $template )
   {
-    $parser = new self( $template );
-
-    $document = MustacheNodeDocument::parse( $parser );
+    $parser   = new self( $template );
+    $document = MustacheDocument::parse( $parser );
 
     assert( $document->originalText() === $template );
     assert( $parser->scanner->isEof() );
@@ -20,17 +19,12 @@ final class MustacheParser
 
   private function __construct( $template )
   {
-    $this->scanner = new StringScanner( $template );
+    $this->scanner = StringScanner::create( $template );
   }
 
-  public function indentRegex()
+  public function lineBoundaryRegex()
   {
-    return "[\t ]*";
-  }
-
-  public function newLineRegex()
-  {
-    return "\r\n|\n|^";
+    return "\r\n|\n|^|$";
   }
 
   public function openTagRegex()
@@ -43,32 +37,10 @@ final class MustacheParser
     return $this->escape( $this->closeTag );
   }
 
-  public function eolSpaceRegex()
+  public function setDelimiters( $openTag, $closeTag )
   {
-    return $this->indentRegex() . "(" . $this->newLineRegex() . "|$)";
-  }
-
-  public function closeTypeRegex( $type )
-  {
-    return '(' . $this->escape( $type == '{' ? '}' : $type ) . ')?';
-  }
-
-  public function handleSetDelimiters( $delimiters )
-  {
-    list( $this->openTag, $this->closeTag ) = explode( ' ', $delimiters );
-  }
-
-  public function tagTypeRegex()
-  {
-    return "#|\^|\/|\<|\>|\=|\!|&|\{|";
-  }
-
-  public function tagContentRegex( $type )
-  {
-    if ( $type == '!' || $type == '=' )
-      return ".*?(?= *" . $this->closeTypeRegex( $type ) . $this->closeTagRegex() . ")";
-    else
-      return '(\w|[?!\/.-])*';
+    $this->openTag  = $openTag;
+    $this->closeTag = $closeTag;
   }
 
   public function escape( $text )
@@ -92,7 +64,12 @@ final class StringScanner
   private $position = 0;
   private $string;
 
-  public function __construct( $string )
+  public static function create( $string )
+  {
+    return new self( $string );
+  }
+
+  private function __construct( $string )
   {
     $this->string = $string;
   }
@@ -121,6 +98,13 @@ final class StringScanner
     return $this->matchText( $regex ) !== null;
   }
 
+  public function isEof()
+  {
+    assert( $this->position <= strlen( $this->string ) );
+
+    return $this->position == strlen( $this->string );
+  }
+
   private function matchText( $regex )
   {
     preg_match( "/$regex/su", $this->string, $matches, PREG_OFFSET_CAPTURE, $this->position );
@@ -129,13 +113,6 @@ final class StringScanner
       return $matches[0][0];
     else
       return null;
-  }
-
-  public function isEof()
-  {
-    assert( $this->position <= strlen( $this->string ) );
-
-    return $this->position == strlen( $this->string );
   }
 }
 

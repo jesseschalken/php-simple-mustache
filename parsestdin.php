@@ -12,5 +12,5 @@ function exception_error_handler($errno, $errstr, $errfile, $errline ) {
 
 set_error_handler("exception_error_handler");
 
-var_dump( MustacheParser::parse( file_get_contents( 'php://stdin' ) ) );
+print MustacheParser::parse( file_get_contents( 'php://stdin' ) )->dumpAst();
 
