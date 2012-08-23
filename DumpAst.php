@@ -6,7 +6,7 @@ class MustacheNodeVisitorDumpAst extends MustacheNodeVisitor
 
   public static function dumpDocument( MustacheDocument $document )
   {
-    return join( '', $document->acceptVisitor( new self ) );
+    return join( '', $document->iterateVisitor( new self ) );
   }
 
   private function dump( $string )
@@ -58,7 +58,7 @@ class MustacheNodeVisitorDumpAst extends MustacheNodeVisitor
 
     $this->indentLevel++;
 
-    $result .= join( '', $section->innerNodes()->acceptVisitor( $this ) );
+    $result .= join( '', $section->innerNodes()->iterateVisitor( $this ) );
 
     $this->indentLevel--;
 
