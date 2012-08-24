@@ -58,6 +58,10 @@ final class MustacheParser
   }
 }
 
+final class StringScannerMatchFailureException extends Exception
+{
+}
+
 final class StringScanner
 {
   private $position = 0;
@@ -82,9 +86,6 @@ final class StringScanner
   {
     $match = $this->matchText( $regex );
 
-    if ( $match === null )
-      throw new Exception( "Regex $regex failed to match at offset $this->position" );
-
     $this->position += strlen( $match );
 
     assert( $this->position <= strlen( $this->string ) );
@@ -94,17 +95,29 @@ final class StringScanner
 
   public function textMatches( $regex )
   {
-    return $this->matchText( $regex ) !== null;
+    try
+    {
+      $this->matchText( $regex );
+
+      return true;
+    }
+    catch ( StringScannerMatchFailureException $e )
+    {
+      return false;
+    }
   }
 
   private function matchText( $regex )
   {
     preg_match( "/$regex/su", $this->string, $matches, PREG_OFFSET_CAPTURE, $this->position );
 
-    if ( isset( $matches[0] ) && $matches[0][1] === $this->position )
+    if ( isset( $matches[0][0] ) && isset( $matches[0][1] ) && $matches[0][1] === $this->position )
       return $matches[0][0];
-    else
-      return null;
+
+    $message = "Regex $regex failed to match at offset $this->position in "
+      . "string " . json_encode( $this->string );
+
+    throw new StringScannerMatchFailureException( $message );
   }
 }
 
