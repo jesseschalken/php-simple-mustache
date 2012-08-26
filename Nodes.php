@@ -142,13 +142,10 @@ final class MustacheNodeStream implements IteratorAggregate
 
   public static function parse( MustacheParser $parser, &$closeSectionTag )
   {
-    return new self( $parser, $closeSectionTag );
-  }
+    $nodes = array();
 
-  protected function __construct( MustacheParser $parser, &$closeSectionTag )
-  {
     for (;;) {
-      $text          = $this->scanUntilNextTagOrEof( $parser );
+      $text          = self::scanUntilNextTagOrEof( $parser );
       $isStartOfLine = $parser->textMatches( "(?<=" . $parser->lineBoundaryRegex() . ")" );
       $indent        = $parser->scanText( "\s*" );
 
@@ -158,22 +155,24 @@ final class MustacheNodeStream implements IteratorAggregate
         $text .= $indent;
 
         if ( $text !== '' )
-          $this->nodes[] = MustacheNodeText::create( $parser, $text );
+          $nodes[] = MustacheNodeText::create( $parser, $text );
 
         if ( $tag->isCloseSectionTag() ) {
           $closeSectionTag = $tag;
           break;
         }
 
-        $this->nodes[] = $tag->toNode( $parser );
+        $nodes[] = $tag->toNode( $parser );
       } else {
-        $this->nodes[] = MustacheNodeText::create( $parser, $text . $indent . $parser->scanText( '.*$' ) );
+        $nodes[] = MustacheNodeText::create( $parser, $text . $indent . $parser->scanText( '.*$' ) );
         break;
       }
     }
+
+    return new self( $nodes );
   }
 
-  private function scanUntilNextTagOrEof( MustacheParser $parser )
+  private static function scanUntilNextTagOrEof( MustacheParser $parser )
   {
     $lineBoundary = $parser->lineBoundaryRegex();
     $openTag      = $parser->openTagRegex();
@@ -181,14 +180,19 @@ final class MustacheNodeStream implements IteratorAggregate
     return $parser->scanText( ".*?(?<=$lineBoundary|)(?=\s*?$openTag|$)" );
   }
 
+  private function __construct( Array $nodes )
+  {
+    $this->nodes = $nodes;
+  }
+
   public function originalText()
   {
-    $text = '';
+    $result = '';
 
     foreach ( $this as $node )
-      $text .= $node->originalText();
+      $result .= $node->originalText();
 
-    return $text;
+    return $result;
   }
 
   public function getIterator()
@@ -404,8 +408,9 @@ final class MustacheNodeSection extends MustacheNode implements IteratorAggregat
 {
   private $startTag;
   private $endTag;
-  private $innerNodes;
+
   private $isInverted;
+  private $innerNodes;
 
   public static function parse( MustacheParser $parser, MustacheParsedTag $startTag, $isInverted )
   {
