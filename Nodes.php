@@ -5,9 +5,14 @@ abstract class MustacheNodeVisitor
   public abstract function visitText( MustacheNodeText $text );
   public abstract function visitComment( MustacheNodeComment $comment );
   public abstract function visitSetDelimiters( MustacheNodeSetDelimiters $setDelimiter );
+
   public abstract function visitPartial( MustacheNodePartial $partial );
-  public abstract function visitVariable( MustacheNodeVariable $variable );
-  public abstract function visitSection( MustacheNodeSection $section );
+
+  public abstract function visitVariableEscaped( MustacheNodeVariableEscaped $variable );
+  public abstract function visitVariableUnescaped( MustacheNodeVariableUnescaped $variable );
+
+  public abstract function visitSectionNormal( MustacheNodeSectionNormal $section );
+  public abstract function visitSectionInverted( MustacheNodeSectionInverted $section );
 }
 
 abstract class MustacheNode
@@ -15,14 +20,14 @@ abstract class MustacheNode
   public abstract function acceptVisitor( MustacheNodeVisitor $visitor );
   public abstract function originalText();
 
-  protected function __construct() {}
+  public function __construct() {}
 }
 
 abstract class MustacheNodeTag extends MustacheNode
 {
   private $tag;
 
-  protected function __construct( MustacheParsedTag $tag )
+  public function __construct( MustacheParsedTag $tag )
   {
     $this->tag = $tag;
   }
@@ -32,7 +37,7 @@ abstract class MustacheNodeTag extends MustacheNode
     return $this->tag->content();
   }
 
-  public final function originalText()
+  public function originalText()
   {
     return $this->tag->originalText();
   }
@@ -40,11 +45,6 @@ abstract class MustacheNodeTag extends MustacheNode
 
 final class MustacheNodeComment extends MustacheNodeTag
 {
-  public static function create( MustacheParsedTag $tag )
-  {
-    return new self( $tag );
-  }
-
   public function acceptVisitor( MustacheNodeVisitor $visitor )
   {
     return $visitor->visitComment( $this );
@@ -62,19 +62,17 @@ final class MustacheNodeSetDelimiters extends MustacheNodeTag
   private $innerPadding;
   private $closeTag;
 
-  public static function create( MustacheParser $parser, MustacheParsedTag $tag )
+  public function __construct( MustacheParsedTag $tag, MustacheParser $parser )
   {
-    $tag = new self( $tag );
+    parent::__construct( $tag );
 
-    $contentScanner = StringScanner::create( $tag->tagContent() );
+    $contentScanner = new StringScanner( $this->tagContent() );
 
-    $tag->openTag      = $contentScanner->scanText( "^\S+" );
-    $tag->innerPadding = $contentScanner->scanText( "\s+" );
-    $tag->closeTag     = $contentScanner->scanText( "\S+$" );
+    $this->openTag      = $contentScanner->scanText( "^\S+" );
+    $this->innerPadding = $contentScanner->scanText( "\s+" );
+    $this->closeTag     = $contentScanner->scanText( "\S+$" );
 
-    $parser->setDelimiters( $tag->openTag, $tag->closeTag );
-
-    return $tag;
+    $parser->setDelimiters( $this->openTag, $this->closeTag );
   }
 
   public function acceptVisitor( MustacheNodeVisitor $visitor )
@@ -93,38 +91,32 @@ final class MustacheNodeSetDelimiters extends MustacheNodeTag
   }
 }
 
-final class MustacheNodeVariable extends MustacheNodeTag
+abstract class MustacheNodeVariable extends MustacheNodeTag
 {
-  public static function create( MustacheParsedTag $tag, $isEscaped )
-  {
-    $variable = new self( $tag );
-    $variable->isEscaped = $isEscaped;
-    return $variable;
-  }
-
-  public function acceptVisitor( MustacheNodeVisitor $visitor )
-  {
-    return $visitor->visitVariable( $this );
-  }
-
-  public final function isEscaped()
-  {
-    return $this->isEscaped;
-  }
-
   public final function name()
   {
     return $this->tagContent();
   }
 }
 
+class MustacheNodeVariableEscaped extends MustacheNodeVariable
+{
+  public function acceptVisitor( MustacheNodeVisitor $visitor )
+  {
+    return $visitor->visitVariableEscaped( $this );
+  }
+}
+
+class MustacheNodeVariableUnescaped extends MustacheNodeVariable
+{
+  public function acceptVisitor( MustacheNodeVisitor $visitor )
+  {
+    return $visitor->visitVariableUnescaped( $this );
+  }
+}
+
 final class MustacheNodePartial extends MustacheNodeTag
 {
-  public static function create( MustacheParsedTag $tag )
-  {
-    return new self( $tag );
-  }
-
   public function acceptVisitor( MustacheNodeVisitor $visitor )
   {
     return $visitor->visitPartial( $this );
@@ -138,51 +130,43 @@ final class MustacheNodePartial extends MustacheNodeTag
 
 final class MustacheNodeStream implements IteratorAggregate
 {
-  private $nodes = array();
+  private $nodes           = array();
+  private $closeSectionTag = array();
 
-  public static function parse( MustacheParser $parser, &$closeSectionTag )
+  public function __construct( MustacheParser $parser )
   {
-    $nodes = array();
+    while ( !$this->finished( $parser ) )
+      $this->parseOneTag( $parser );
 
-    for (;;) {
-      $text          = self::scanUntilNextTagOrEof( $parser );
-      $isStartOfLine = $parser->textMatches( "(?<=" . $parser->lineBoundaryRegex() . ")" );
-      $indent        = $parser->scanText( "\s*" );
-
-      if ( $parser->textMatches( $parser->openTagRegex() ) ) {
-        $tag = MustacheParsedTag::parse( $parser, $isStartOfLine, $indent );
-
-        $text .= $indent;
-
-        if ( $text !== '' )
-          $nodes[] = MustacheNodeText::create( $parser, $text );
-
-        if ( $tag->isCloseSectionTag() ) {
-          $closeSectionTag = $tag;
-          break;
-        }
-
-        $nodes[] = $tag->toNode( $parser );
-      } else {
-        $nodes[] = MustacheNodeText::create( $parser, $text . $indent . $parser->scanText( '.*$' ) );
-        break;
-      }
-    }
-
-    return new self( $nodes );
+    if ( !$this->closeSectionTag )
+      $this->addText( $parser->scanText( '.*$' ) );
   }
 
-  private static function scanUntilNextTagOrEof( MustacheParser $parser )
+  private function finished( MustacheParser $parser )
   {
-    $lineBoundary = $parser->lineBoundaryRegex();
-    $openTag      = $parser->openTagRegex();
-
-    return $parser->scanText( ".*?(?<=$lineBoundary|)(?=\s*?$openTag|$)" );
+    return $this->closeSectionTag || !$parser->textMatches( '.*' . $parser->openTagRegex() );
   }
 
-  private function __construct( Array $nodes )
+  private function parseOneTag( MustacheParser $parser )
   {
-    $this->nodes = $nodes;
+    $tag = new MustacheParsedTag( $parser, $text );
+
+    $this->addText( $text );
+    $this->addTag( $parser, $tag );
+  }
+
+  private function addTag( MustacheParser $parser, MustacheParsedTag $tag )
+  {
+    if ( $tag->isCloseSectionTag() )
+      $this->closeSectionTag[] = $tag;
+    else
+      $this->nodes[] = $tag->toNode( $parser );
+  }
+
+  private function addText( $text )
+  {
+    if ( $text !== '' )
+      $this->nodes[] = new MustacheNodeText( $text );
   }
 
   public function originalText()
@@ -191,6 +175,9 @@ final class MustacheNodeStream implements IteratorAggregate
 
     foreach ( $this as $node )
       $result .= $node->originalText();
+
+    foreach ( $this->closeSectionTag as $tag )
+      $result .= $tag->originalText();
 
     return $result;
   }
@@ -209,24 +196,22 @@ final class MustacheNodeStream implements IteratorAggregate
 
     return $results;
   }
+
+  public function closeSectionTag()
+  {
+    return $this->closeSectionTag;
+  }
 }
 
 final class MustacheDocument implements IteratorAggregate
 {
   private $nodes;
 
-  public static function parse( MustacheParser $parser )
+  public function __construct( MustacheParser $parser )
   {
-    return new self( $parser );
-  }
+    $this->nodes = new MustacheNodeStream( $parser );
 
-  protected function __construct( MustacheParser $parser )
-  {
-    $closeSectionTag = null;
-
-    $this->nodes = MustacheNodeStream::parse( $parser, $closeSectionTag );
-
-    if ( $closeSectionTag !== null )
+    foreach ( $this->nodes->closeSectionTag() as $tag )
       throw new Exception( "Close of unopened section" );
   }
 
@@ -244,22 +229,15 @@ final class MustacheDocument implements IteratorAggregate
   {
     return $this->nodes->getIterator();
   }
-
-  public function nodes()
-  {
-    return $this->nodes;
-  }
 }
 
 class MustacheNodeText extends MustacheNode
 {
   private $text = '';
 
-  public static function create( MustacheParser $parser, $text )
+  public function __construct( $text )
   {
-    $textNode = new self;
-    $textNode->text = $text;
-    return $textNode;
+    $this->text = $text;
   }
 
   public function acceptVisitor( MustacheNodeVisitor $visitor )
@@ -280,91 +258,79 @@ class MustacheNodeText extends MustacheNode
 
 final class MustacheParsedTag
 {
+  private $spaceBefore;
   private $openTag;
-  private $closeTag;
-
   private $sigil;
-  private $closeSigil;
-
   private $paddingBefore;
-  private $paddingAfter;
-
   private $content;
+  private $paddingAfter;
+  private $closeSigil;
+  private $closeTag;
+  private $spaceAfter;
 
   private $isStandalone;
 
-  private $spaceBefore;
-  private $spaceAfter;
-
-  public static function parse( MustacheParser $parser, $isStartOfLine, &$indent )
+  public function __construct( MustacheParser $parser, &$textBefore )
   {
-    $tag = new self;
+    $lineBoundary = $parser->lineBoundaryRegex();
 
-    $tag->openTag       = $parser->scanText( $parser->openTagRegex() );
-    $tag->sigil         = $parser->scanText( $tag->sigilRegex() );
-    $tag->paddingBefore = $parser->scanText( "\s*" );
-    $tag->content       = $parser->scanText( $tag->contentRegex( $parser ) );
-    $tag->paddingAfter  = $parser->scanText( "\s*" );
-    $tag->closeSigil    = $parser->scanText( $tag->closeSigilRegex( $parser ) );
-    $tag->closeTag      = $parser->scanText( $parser->closeTagRegex() );
+    $textBefore = $this->scanUntilNextTag( $parser );
 
-    $tag->isStandalone = $isStartOfLine
-      && $tag->typeAllowsStandalone()
-      && $parser->textMatches( $tag->eolSpaceRegex( $parser ) );
+    $this->isStandalone  = $parser->textMatches( "(?<=$lineBoundary)" );
+    $this->spaceBefore   = $parser->scanText( "\s*" );
+    $this->openTag       = $parser->scanText( $parser->openTagRegex() );
+    $this->sigil         = $parser->scanText( $this->sigilRegex() );
+    $this->paddingBefore = $parser->scanText( "\s*" );
+    $this->content       = $parser->scanText( $this->contentRegex( $parser ) );
+    $this->paddingAfter  = $parser->scanText( "\s*" );
+    $this->closeSigil    = $parser->scanText( $this->closeSigilRegex( $parser ) );
+    $this->closeTag      = $parser->scanText( $parser->closeTagRegex() );
 
-    if ( $tag->isStandalone ) {
-      $tag->spaceBefore = $indent;
-      $tag->spaceAfter  = $parser->scanText( $tag->eolSpaceRegex( $parser ) );
-      $indent           = '';
+    $this->isStandalone  = $this->isStandalone && $parser->textMatches( "\s*?($lineBoundary)" );
+
+    if ( $this->isStandalone && $this->typeAllowsStandalone() ) {
+      $this->spaceAfter = $parser->scanText( "\s*?($lineBoundary)" );
     } else {
-      $tag->spaceBefore = '';
-      $tag->spaceAfter  = '';
+      $textBefore .= $this->spaceBefore;
+      $this->spaceBefore = '';
+      $this->spaceAfter  = '';
     }
-
-    return $tag;
   }
 
-  private function __construct() {}
-
-  private function eolSpaceRegex( MustacheParser $parser )
+  private function scanUntilNextTag( MustacheParser $parser )
   {
-    return "\s*?" . $parser->lineBoundaryRegex();
+    $lineBoundary = $parser->lineBoundaryRegex();
+    $openTag      = $parser->openTagRegex();
+
+    return $parser->scanText( ".*?(?=\s*$openTag)(\s*($lineBoundary))?" );
   }
 
   public final function toNode( MustacheParser $parser )
   {
     switch ( $this->sigil ) {
-      case '#':
-        return MustacheNodeSection::parse( $parser, $this, false );
-      case '^':
-        return MustacheNodeSection::parse( $parser, $this, true );
-      case '<':
-      case '>':
-        return MustacheNodePartial::create( $this );
-      case '!':
-        return MustacheNodeComment::create( $this );
-      case '=':
-        return MustacheNodeSetDelimiters::create( $parser, $this );
-      case '&':
-      case '{':
-        return MustacheNodeVariable::create( $this, false );
-      case '':
-        return MustacheNodeVariable::create( $this, true );
-      default:
-        assert( false );
+      case '#' : return new MustacheNodeSectionNormal( $this, $parser );
+      case '^' : return new MustacheNodeSectionInverted( $this, $parser );
+      case '<' : return new MustacheNodePartial( $this );
+      case '>' : return new MustacheNodePartial( $this );
+      case '!' : return new MustacheNodeComment( $this );
+      case '=' : return new MustacheNodeSetDelimiters( $this, $parser );
+      case '&' : return new MustacheNodeVariableUnescaped( $this );
+      case '{' : return new MustacheNodeVariableUnescaped( $this );
+      case ''  : return new MustacheNodeVariableEscaped( $this );
+      default  : assert( false );
     }
   }
 
   public function isCloseSectionTag()
   {
-    return $this->sigil === '/';
+    return $this->sigil == '/';
   }
 
   private function typeAllowsStandalone()
   {
-    return $this->sigil !== '{'
-      && $this->sigil !== '&'
-      && $this->sigil !== '';
+    return $this->sigil != '{'
+      && $this->sigil != '&'
+      && $this->sigil != '';
   }
 
   private function sigilRegex()
@@ -374,7 +340,7 @@ final class MustacheParsedTag
 
   private function contentRegex( MustacheParser $parser )
   {
-    if ( $this->sigil === '!' || $this->sigil === '=' )
+    if ( $this->sigil == '!' || $this->sigil == '=' )
       return ".*?(?=\s*" . $this->closeSigilRegex( $parser ) . $parser->closeTagRegex() . ")";
     else
       return '(\w|[?!\/.-])*';
@@ -404,42 +370,29 @@ final class MustacheParsedTag
   }
 }
 
-final class MustacheNodeSection extends MustacheNode implements IteratorAggregate
+abstract class MustacheNodeSection extends MustacheNodeTag implements IteratorAggregate
 {
-  private $startTag;
-  private $endTag;
+  private $nodes;
 
-  private $isInverted;
-  private $innerNodes;
-
-  public static function parse( MustacheParser $parser, MustacheParsedTag $startTag, $isInverted )
+  public function __construct( MustacheParsedTag $startTag, MustacheParser $parser )
   {
-    $section = new self;
+    parent::__construct( $startTag );
 
-    $section->startTag   = $startTag;
-    $section->endTag     = null;
-    $section->isInverted = $isInverted;
-    $section->innerNodes = MustacheNodeStream::parse( $parser, $section->endTag );
+    $this->nodes = new MustacheNodeStream( $parser );
 
-    if ( $section->endTag === null )
-      throw new Exception( "Section left unclosed" );
+    foreach ( $this->nodes->closeSectionTag() as $tag ) {
+      if ( $tag->content() != $this->tagContent() )
+        throw new Exception( "Open section/close section mismatch" );
 
-    if ( $section->endTag->content() !== $section->startTag->content() )
-      throw new Exception( "Open section/close section mismatch" );
+      return;
+    }
 
-    return $section;
+    throw new Exception( "Section left unclosed" );
   }
 
   public function originalText()
   {
-    return $this->startTag->originalText()
-      . $this->innerNodes->originalText()
-      . $this->endTag->originalText();
-  }
-
-  public function acceptVisitor( MustacheNodeVisitor $visitor )
-  {
-    return $visitor->visitSection( $this );
+    return parent::originalText() . $this->nodes->originalText();
   }
 
   public function getIterator()
@@ -447,19 +400,30 @@ final class MustacheNodeSection extends MustacheNode implements IteratorAggregat
     return $this->nodes->getIterator();
   }
 
+  public function iterateVisitor( MustacheNodeVisitor $visitor )
+  {
+    return $this->nodes->iterateVisitor( $visitor );
+  }
+
   public final function name()
   {
-    return $this->startTag->content();
+    return $this->tagContent();
   }
+}
 
-  public final function innerNodes()
+final class MustacheNodeSectionNormal extends MustacheNodeSection
+{
+  public function acceptVisitor( MustacheNodeVisitor $visitor )
   {
-    return $this->innerNodes;
+    return $visitor->visitSectionNormal( $this );
   }
+}
 
-  public function isInverted()
+final class MustacheNodeSectionInverted extends MustacheNodeSection
+{
+  public function acceptVisitor( MustacheNodeVisitor $visitor )
   {
-    return $this->isInverted;
+    return $visitor->visitSectionInverted( $this );
   }
 }
 

@@ -5,7 +5,7 @@ final class MustacheParser
   public static function parse( $template )
   {
     $parser   = new self( $template );
-    $document = MustacheDocument::parse( $parser );
+    $document = new MustacheDocument( $parser );
 
     assert( $document->originalText() === $template );
 
@@ -18,7 +18,7 @@ final class MustacheParser
 
   private function __construct( $template )
   {
-    $this->scanner = StringScanner::create( $template );
+    $this->scanner = new StringScanner( $template );
   }
 
   public function lineBoundaryRegex()
@@ -67,12 +67,7 @@ final class StringScanner
   private $position = 0;
   private $string;
 
-  public static function create( $string )
-  {
-    return new self( $string );
-  }
-
-  private function __construct( $string )
+  public function __construct( $string )
   {
     $this->string = $string;
   }
