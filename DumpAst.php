@@ -41,33 +41,33 @@ class MustacheNodeVisitorDumpAst extends MustacheNodeVisitor
 
   public function visitVariableEscaped( MustacheNodeVariableEscaped $variable )
   {
-		return $this->indentLine( 'variable: ' . $this->dump( $variable->name() ) );
+    return $this->indentLine( 'variable: ' . $this->dump( $variable->name() ) );
   }
 
   public function visitVariableUnescaped( MustacheNodeVariableUnescaped $variable )
   {
-		return $this->indentLine( 'unescaped variable: ' . $this->dump( $variable->name() ) );
+    return $this->indentLine( 'unescaped variable: ' . $this->dump( $variable->name() ) );
   }
 
-	public function visitSectionNormal( MustacheNodeSectionNormal $section )
-	{
-		return $this->indentLine( 'section: ' . $this->dump( $section->name() ) ) . $this->dumpSection( $section );
-	}
+  public function visitSectionNormal( MustacheNodeSectionNormal $section )
+  {
+    return $this->indentLine( 'section: ' . $this->dump( $section->name() ) ) . $this->dumpSection( $section );
+  }
 
-	public function visitSectionInverted( MustacheNodeSectionInverted $section )
-	{
-		return $this->indentLine( 'inverted section: ' . $this->dump( $section->name() ) ) . $this->dumpSection( $section );
-	}
+  public function visitSectionInverted( MustacheNodeSectionInverted $section )
+  {
+    return $this->indentLine( 'inverted section: ' . $this->dump( $section->name() ) ) . $this->dumpSection( $section );
+  }
 
-	private function dumpSection( MustacheNodeSection $section )
-	{
-		$this->indentLevel++;
+  private function dumpSection( MustacheNodeSection $section )
+  {
+    $this->indentLevel++;
 
-		$result = join( '', $section->iterateVisitor( $this ) );
+    $result = join( '', $section->iterateVisitor( $this ) );
 
-		$this->indentLevel--;
+    $this->indentLevel--;
 
-		return $result;
-	}
+    return $result;
+  }
 }
 
