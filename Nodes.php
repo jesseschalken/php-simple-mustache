@@ -286,9 +286,12 @@ final class MustacheParsedTag
     $this->closeSigil    = $parser->scanText( $this->closeSigilRegex( $parser ) );
     $this->closeTag      = $parser->scanText( $parser->closeTagRegex() );
 
-    $this->isStandalone  = $this->isStandalone && $parser->textMatches( "\s*?($lineBoundary)" );
+    $this->isStandalone =
+      $this->isStandalone &&
+      $this->typeAllowsStandalone() &&
+      $parser->textMatches( "\s*?($lineBoundary)" );
 
-    if ( $this->isStandalone && $this->typeAllowsStandalone() ) {
+    if ( $this->isStandalone ) {
       $this->spaceAfter = $parser->scanText( "\s*?($lineBoundary)" );
     } else {
       $textBefore .= $this->spaceBefore;
