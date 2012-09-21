@@ -2,12 +2,13 @@
 
 final class Mustache
 {
-  public static function run( $template, $data )
+  public static function run( $template, $data, MustachePartialProviderArray $partials )
   {
     $document = MustacheParser::parse( $template );
 
-    // TODO
-    return null;
+    $value = MustacheValue::reflect( $data );
+
+    return MustacheProcessor::process( $document, $value, $partials );
   }
 }
 

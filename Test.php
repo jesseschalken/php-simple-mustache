@@ -82,9 +82,15 @@ class MustacheTestCase extends Test
     $data     = $this->jsonTest->data;
     $template = $this->jsonTest->template;
     $expected = $this->jsonTest->expected;
-    $result   = Mustache::run( $template, $data );
 
-    // $this->assertEquals( $expected, $result );
+    if ( isset( $this->jsonTest->partials ) )
+      $partials = (array) $this->jsonTest->partials;
+    else
+      $partials = array();
+
+    $result = Mustache::run( $template, $data, new MustachePartialProviderArray( $partials ) );
+
+    $this->assertEquals( $expected, $result );
   }
 }
 
