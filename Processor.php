@@ -33,9 +33,16 @@ final class MustacheProcessor extends MustacheNodeVisitor
 
   public function visitPartial( MustacheNodePartial $partial )
   {
-    $document = MustacheParser::parse( $this->partials->partial( $partial->name() ) );
+    $partialText     = $this->partials->partial( $partial->name() );
+    $partialText     = self::indentText( $partial->indent(), $partialText );
+    $partialDocument = MustacheParser::parse( $partialText );
 
-    return join( '', $document->iterateVisitor( $this ) );
+    return join( '', $partialDocument->iterateVisitor( $this ) );
+  }
+
+  private static function indentText( $indent, $text )
+  {
+    return preg_replace( "/(^|\r?\n)(?!$)/su", '\0' . $indent, $text );
   }
 
   private function resolveName( $name )

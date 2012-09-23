@@ -41,6 +41,11 @@ abstract class MustacheNodeTag extends MustacheNode
   {
     return $this->tag->originalText();
   }
+
+  public final function indent()
+  {
+    return $this->tag->indent();
+  }
 }
 
 final class MustacheNodeComment extends MustacheNodeTag
@@ -370,6 +375,11 @@ final class MustacheParsedTag
       . $this->closeSigil
       . $this->closeTag
       . $this->spaceAfter;
+  }
+
+  public function indent()
+  {
+    return $this->spaceBefore;
   }
 }
 
