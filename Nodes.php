@@ -192,16 +192,6 @@ final class MustacheNodeStream implements IteratorAggregate
     return new ArrayIterator( $this->nodes );
   }
 
-  public function iterateVisitor( MustacheNodeVisitor $visitor )
-  {
-    $results = array();
-
-    foreach ( $this as $node )
-      $results[] = $node->acceptVisitor( $visitor );
-
-    return $results;
-  }
-
   public function closeSectionTag()
   {
     return $this->closeSectionTag;
@@ -223,11 +213,6 @@ final class MustacheDocument implements IteratorAggregate
   public function originalText()
   {
     return $this->nodes->originalText();
-  }
-
-  public function iterateVisitor( MustacheNodeVisitor $visitor )
-  {
-    return $this->nodes->iterateVisitor( $visitor );
   }
 
   public function getIterator()
@@ -411,11 +396,6 @@ abstract class MustacheNodeSection extends MustacheNodeTag implements IteratorAg
   public function getIterator()
   {
     return $this->nodes->getIterator();
-  }
-
-  public function iterateVisitor( MustacheNodeVisitor $visitor )
-  {
-    return $this->nodes->iterateVisitor( $visitor );
   }
 
   public final function name()

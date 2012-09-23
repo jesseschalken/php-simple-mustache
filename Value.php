@@ -5,11 +5,11 @@ abstract class MustacheValue
   public static function reflect( $value )
   {
     if ( $value === null )
-      return new MustacheValueFalse;
+      return new MustacheValueFalsey;
     else if ( $value === false )
-      return new MustacheValueFalse;
+      return new MustacheValueFalsey;
     else if ( $value === true )
-      return new MustacheValueTrue;
+      return new MustacheValueTruthy;
     else if ( is_scalar( $value ) )
       return new MustacheValueString( (string) $value );
     else if ( is_array( $value ) )
@@ -17,7 +17,7 @@ abstract class MustacheValue
     else if ( is_object( $value ) )
       return new MustacheValueObject( $value );
 
-    return new MustacheValueFalse;
+    return new MustacheValueFalsey;
   }
 
   public function hasProperty( $name )
@@ -27,7 +27,7 @@ abstract class MustacheValue
 
   public function property( $name )
   {
-    return new MustacheValueFalse;
+    return new MustacheValueFalsey;
   }
 
   public function text()
@@ -41,15 +41,15 @@ abstract class MustacheValue
   }
 }
 
-final class MustacheValueFalse extends MustacheValue
+final class MustacheValueFalsey extends MustacheValue
 {
 }
 
-final class MustacheValueTrue extends MustacheValue
+final class MustacheValueTruthy extends MustacheValue
 {
   public function toList()
   {
-    return array( new MustacheValueFalse );
+    return array( new MustacheValueFalsey );
   }
 }
 
