@@ -54,7 +54,8 @@ final class MustacheProcessor extends MustacheNodeVisitor
 
   public function visitSectionNormal( MustacheNodeSectionNormal $section )
   {
-    $this->renderSectionValues( $this->sectionValues( $section ), $section );
+    foreach ( $this->sectionValues( $section ) as $value )
+      $this->renderSectionValue( $value, $section );
   }
 
   public function visitSectionInverted( MustacheNodeSectionInverted $section )
@@ -78,12 +79,6 @@ final class MustacheProcessor extends MustacheNodeVisitor
       $node->acceptVisitor( $this );
 
     $this->popContext();
-  }
-
-  private function renderSectionValues( array $values, MustacheNodeSection $section )
-  {
-    foreach ( $values as $value )
-      $this->renderSectionValue( $value, $section );
   }
 
   private function variableText( MustacheNodeVariable $var )

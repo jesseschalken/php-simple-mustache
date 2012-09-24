@@ -4,20 +4,15 @@ abstract class MustacheValue
 {
   public static function reflect( $value )
   {
-    if ( $value === null )
-      return new MustacheValueFalsey;
-    else if ( $value === false )
-      return new MustacheValueFalsey;
-    else if ( $value === true )
-      return new MustacheValueTruthy;
-    else if ( is_scalar( $value ) )
-      return new MustacheValueString( (string) $value );
-    else if ( is_array( $value ) )
-      return new MustacheValueArray( $value );
-    else if ( is_object( $value ) )
-      return new MustacheValueObject( $value );
+    if ( is_null( $value ) )   return new MustacheValueFalsey;
+    if ( is_bool( $value ) )   return $value ? new MustacheValueTruthy : new MustacheValueFalsey;
+    if ( is_string( $value ) ) return new MustacheValueString( $value );
+    if ( is_int( $value ) )    return new MustacheValueString( (string) $value );
+    if ( is_float( $value ) )  return new MustacheValueString( (string) $value );
+    if ( is_array( $value ) )  return new MustacheValueArray( $value );
+    if ( is_object( $value ) ) return new MustacheValueObject( $value );
 
-    return new MustacheValueFalsey;
+    assert( false );
   }
 
   public function hasProperty( $name )
@@ -53,6 +48,21 @@ final class MustacheValueTruthy extends MustacheValue
   }
 }
 
+final class MustacheValueString extends MustacheValue
+{
+  private $text;
+
+  public function __construct( $text )
+  {
+    $this->text = $text;
+  }
+
+  public function text()
+  {
+    return $this->text;
+  }
+}
+
 final class MustacheValueObject extends MustacheValue
 {
   private $object;
@@ -81,21 +91,6 @@ final class MustacheValueObject extends MustacheValue
   }
 }
 
-final class MustacheValueString extends MustacheValue
-{
-  private $text;
-
-  public function __construct( $text )
-  {
-    $this->text = $text;
-  }
-
-  public function text()
-  {
-    return $this->text;
-  }
-}
-
 final class MustacheValueArray extends MustacheValue
 {
   private $array;
@@ -107,13 +102,13 @@ final class MustacheValueArray extends MustacheValue
 
   public function hasProperty( $name )
   {
-    return array_key_exists( $this->array, $name );
+    return array_key_exists( $name, $this->array );
   }
 
   public function property( $name )
   {
     if ( $this->hasProperty( $name ) )
-      return $this->array[$name];
+      return MustacheValue::reflect( $this->array[$name] );
 
     return parent::property( $name );
   }
