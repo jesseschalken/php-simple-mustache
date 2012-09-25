@@ -2,17 +2,28 @@
 
 abstract class MustacheValue
 {
-  public static function reflect( $value )
+  public static function reflect( $v )
   {
-    if ( is_null( $value ) )   return new MustacheValueFalsey;
-    if ( is_bool( $value ) )   return $value ? new MustacheValueTruthy : new MustacheValueFalsey;
-    if ( is_string( $value ) ) return new MustacheValueString( $value );
-    if ( is_int( $value ) )    return new MustacheValueString( (string) $value );
-    if ( is_float( $value ) )  return new MustacheValueString( (string) $value );
-    if ( is_array( $value ) )  return new MustacheValueArray( $value );
-    if ( is_object( $value ) ) return new MustacheValueObject( $value );
+    if ( is_null( $v ) )   return new MustacheValueFalsey;
+    if ( is_bool( $v ) )   return $v ? new MustacheValueTruthy : new MustacheValueFalsey;
+    if ( is_string( $v ) ) return new MustacheValueText( $v );
+    if ( is_int( $v ) )    return new MustacheValueText( (string) $v );
+    if ( is_float( $v ) )  return new MustacheValueText( (string) $v );
+    if ( is_array( $v ) )  return self::reflectArray( $v );
+    if ( is_object( $v ) ) return self::reflectArray( (array) $v );
 
     assert( false );
+  }
+
+  private static function reflectArray( array $array )
+  {
+    foreach ( $array as &$v )
+      $v = self::reflect( $v );
+
+    if ( array_values( $array ) === $array )
+      return new MustacheValueList( $array );
+    else
+      return new MustacheValueObject( $array );
   }
 
   public function hasProperty( $name )
@@ -48,7 +59,7 @@ final class MustacheValueTruthy extends MustacheValue
   }
 }
 
-final class MustacheValueString extends MustacheValue
+final class MustacheValueText extends MustacheValue
 {
   private $text;
 
@@ -63,35 +74,7 @@ final class MustacheValueString extends MustacheValue
   }
 }
 
-final class MustacheValueObject extends MustacheValue
-{
-  private $object;
-
-  public function __construct( $object )
-  {
-    $this->object = $object;
-  }
-
-  public function hasProperty( $name )
-  {
-    return isset( $this->object->$name );
-  }
-
-  public function property( $name )
-  {
-    if ( $this->hasProperty( $name ) )
-      return MustacheValue::reflect( $this->object->$name );
-
-    return parent::property( $name );
-  }
-
-  public function toList()
-  {
-    return array( $this );
-  }
-}
-
-final class MustacheValueArray extends MustacheValue
+final class MustacheValueList extends MustacheValue
 {
   private $array;
 
@@ -100,27 +83,37 @@ final class MustacheValueArray extends MustacheValue
     $this->array = $array;
   }
 
+  public function toList()
+  {
+    return $this->array;
+  }
+}
+
+final class MustacheValueObject extends MustacheValue
+{
+  private $object;
+
+  public function __construct( array $object )
+  {
+    $this->object = $object;
+  }
+
   public function hasProperty( $name )
   {
-    return array_key_exists( $name, $this->array );
+    return isset( $this->object[$name] );
   }
 
   public function property( $name )
   {
-    if ( $this->hasProperty( $name ) )
-      return MustacheValue::reflect( $this->array[$name] );
-
-    return parent::property( $name );
+    if ( isset( $this->object[$name] ) )
+      return $this->object[$name];
+    else
+      return parent::property( $name );
   }
 
   public function toList()
   {
-    $values = array();
-
-    foreach ( $this->array as $value )
-      $values[] = MustacheValue::reflect( $value );
-
-    return $values;
+    return array( $this );
   }
 }
 

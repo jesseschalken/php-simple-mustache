@@ -8,9 +8,9 @@ final class MustacheProcessor extends MustacheNodeVisitor
 
   public static function process( MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials )
   {
-    $self = new self;
+    $self           = new self;
     $self->partials = $partials;
-    $self->pushContext( $value );
+    $self->context  = array( $value );
 
     foreach ( $document as $node )
       $node->acceptVisitor( $self );
@@ -42,14 +42,14 @@ final class MustacheProcessor extends MustacheNodeVisitor
       $node->acceptVisitor( $this );
   }
 
-  public function visitVariableEscaped( MustacheNodeVariableEscaped $variable )
+  public function visitVariableEscaped( MustacheNodeVariableEscaped $var )
   {
-    $this->result .= htmlspecialchars( $this->variableText( $variable ), ENT_COMPAT );
+    $this->result .= htmlspecialchars( $this->variableText( $var ), ENT_COMPAT );
   }
 
-  public function visitVariableUnescaped( MustacheNodeVariableUnescaped $variable )
+  public function visitVariableUnescaped( MustacheNodeVariableUnescaped $var )
   {
-    $this->result .= $this->variableText( $variable );
+    $this->result .= $this->variableText( $var );
   }
 
   public function visitSectionNormal( MustacheNodeSectionNormal $section )
@@ -60,10 +60,10 @@ final class MustacheProcessor extends MustacheNodeVisitor
 
   public function visitSectionInverted( MustacheNodeSectionInverted $section )
   {
-    $values = $this->sectionValues( $section );
+    foreach ( $this->sectionValues( $section ) as $v )
+      return;
 
-    if ( empty( $values ) )
-      $this->renderSectionValue( self::falsey(), $section );
+    $this->renderSectionValue( new MustacheValueFalsey, $section );
   }
 
   private function sectionValues( MustacheNodeSection $section )
@@ -102,12 +102,9 @@ final class MustacheProcessor extends MustacheNodeVisitor
       return $this->currentContext();
 
     foreach ( explode( '.', $name ) as $part )
-      if ( !isset( $value ) )
-        $value = self::resolveProperty( $this->context, $part );
-      else
-        $value = self::resolveProperty( array( $value ), $part );
+      $v = self::resolveProperty( isset( $v ) ? array( $v ) : $this->context, $part );
 
-    return $value;
+    return $v;
   }
 
   private function currentContext()
@@ -115,12 +112,12 @@ final class MustacheProcessor extends MustacheNodeVisitor
     foreach ( $this->context as $v )
       return $v;
 
-    return self::falsey();
+    return new MustacheValueFalsey;
   }
 
   private static function indentText( $indent, $text )
   {
-    return preg_replace( "/(^|\r?\n)(?!$)/su", '\0' . $indent, $text );
+    return preg_replace( "/(?<=^|\r\n|\n)(?!$)/su", addcslashes( $indent, '\\$' ), $text );
   }
 
   private static function resolveProperty( array $context, $p )
@@ -129,11 +126,6 @@ final class MustacheProcessor extends MustacheNodeVisitor
       if ( $v->hasProperty( $p ) )
         return $v->property( $p );
 
-    return self::falsey();
-  }
-
-  private static function falsey()
-  {
     return new MustacheValueFalsey;
   }
 }
