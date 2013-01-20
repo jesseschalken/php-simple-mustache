@@ -106,11 +106,11 @@ final class StringScanner
 	{
 		preg_match( "/$regex/su", $this->string, $matches, PREG_OFFSET_CAPTURE, $this->position );
 
-		if ( isset( $matches[0][0] ) && isset( $matches[0][1] ) && $matches[0][1] === $this->position )
-			return $matches[0][0];
+		if ( isset( $matches[ 0 ][ 0 ] ) && isset( $matches[ 0 ][ 1 ] ) && $matches[ 0 ][ 1 ] === $this->position )
+			return $matches[ 0 ][ 0 ];
 
 		$message =
-			"Regex $regex failed to match at offset $this->position in " . "string " . json_encode( $this->string );
+				"Regex $regex failed to match at offset $this->position in " . "string " . json_encode( $this->string );
 
 		throw new StringScannerMatchFailureException( $message );
 	}

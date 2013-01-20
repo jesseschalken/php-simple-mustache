@@ -6,16 +6,22 @@ abstract class MustacheValue
 	{
 		if ( is_null( $v ) )
 			return new MustacheValueFalsey;
+
 		if ( is_bool( $v ) )
 			return $v ? new MustacheValueTruthy : new MustacheValueFalsey;
+
 		if ( is_string( $v ) )
 			return new MustacheValueText( $v );
+
 		if ( is_int( $v ) )
 			return new MustacheValueText( (string) $v );
+
 		if ( is_float( $v ) )
 			return new MustacheValueText( (string) $v );
+
 		if ( is_array( $v ) )
 			return self::reflectArray( $v );
+
 		if ( is_object( $v ) )
 			return self::reflectArray( (array) $v );
 
@@ -107,13 +113,13 @@ final class MustacheValueObject extends MustacheValue
 
 	function hasProperty( $name )
 	{
-		return isset( $this->object[$name] );
+		return isset( $this->object[ $name ] );
 	}
 
 	function property( $name )
 	{
-		if ( isset( $this->object[$name] ) )
-			return $this->object[$name];
+		if ( isset( $this->object[ $name ] ) )
+			return $this->object[ $name ];
 		else
 			return parent::property( $name );
 	}

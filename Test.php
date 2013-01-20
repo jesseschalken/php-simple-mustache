@@ -22,7 +22,7 @@ class MustacheTest extends Test
 			$test               = new MustacheSpecFile;
 			$test->specFileName = $file->getFilename();
 			$test->specFileJson = json_decode( file_get_contents( $file->getPathname() ) );
-			$tests[]            = $test;
+			$tests[ ]           = $test;
 		}
 
 		return $tests;
@@ -57,7 +57,7 @@ class MustacheSpecFile extends Test
 		{
 			$test           = new MustacheTestCase;
 			$test->jsonTest = $jsonTest;
-			$tests[]        = $test;
+			$tests[ ]       = $test;
 		}
 
 		return $tests;

@@ -7,9 +7,7 @@ final class MustacheProcessor extends MustacheNodeVisitor
 	/** @var MustachePartialProvider */
 	private $partials;
 
-	static function process( MustacheDocument $document,
-	                                MustacheValue $value,
-	                                MustachePartialProvider $partials )
+	static function process( MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials )
 	{
 		$self           = new self;
 		$self->partials = $partials;

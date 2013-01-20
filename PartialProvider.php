@@ -19,8 +19,8 @@ final class MustachePartialProviderArray extends MustachePartialProvider
 
 	function partial( $name )
 	{
-		if ( isset( $this->partials[$name] ) )
-			return $this->partials[$name];
+		if ( isset( $this->partials[ $name ] ) )
+			return $this->partials[ $name ];
 
 		return parent::partial( $name );
 	}

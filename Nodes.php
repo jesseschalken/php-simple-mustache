@@ -8,7 +8,7 @@ abstract class MustacheNodeVisitor
 
 		/** @var MustacheNode $node */
 		foreach ( $nodes as $k => $node )
-			$results[$k] = $node->acceptVisitor( $this );
+			$results[ $k ] = $node->acceptVisitor( $this );
 
 		return $results;
 	}
@@ -181,15 +181,15 @@ final class MustacheNodeStream implements IteratorAggregate
 	private function addTag( MustacheParser $parser, MustacheParsedTag $tag )
 	{
 		if ( $tag->isCloseSectionTag() )
-			$this->closeSectionTag[] = $tag;
+			$this->closeSectionTag[ ] = $tag;
 		else
-			$this->nodes[] = $tag->toNode( $parser );
+			$this->nodes[ ] = $tag->toNode( $parser );
 	}
 
 	private function addText( $text )
 	{
 		if ( $text !== '' )
-			$this->nodes[] = new MustacheNodeText( $text );
+			$this->nodes[ ] = new MustacheNodeText( $text );
 	}
 
 	function originalText()
