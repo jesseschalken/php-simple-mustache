@@ -33,10 +33,14 @@ abstract class MustacheValue
 		foreach ( $array as &$v )
 			$v = self::reflect( $v );
 
-		if ( array_values( $array ) === $array )
-			return new MustacheValueList( $array );
-		else
-			return new MustacheValueObject( $array );
+		return self::isAssociative( $array ) ? new MustacheValueObject( $array ) : new MustacheValueList( $array );
+	}
+
+	private static function isAssociative( array $array )
+	{
+		$keys = array_keys( $array );
+
+		return $keys !== array_keys( $keys );
 	}
 
 	function hasProperty( $name )
