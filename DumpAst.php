@@ -47,7 +47,7 @@ class MustacheNodeVisitorDumpAst extends MustacheNodeVisitor
 		return $this->indentLine( 'variable: ' . $this->dump( $variable->name() ) );
 	}
 
-	function visitVariableUnEscaped( MustacheNodeVariableUnescaped $variable )
+	function visitVariableUnEscaped( MustacheNodeVariableUnEscaped $variable )
 	{
 		return $this->indentLine( 'unescaped variable: ' . $this->dump( $variable->name() ) );
 	}

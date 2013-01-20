@@ -2,25 +2,24 @@
 
 final class MustacheProcessor extends MustacheNodeVisitor
 {
-	private $context = array();
-	private $result = '';
-	/** @var MustachePartialProvider */
-	private $partials;
+	private $context, $result = '', $partials;
 
 	static function process( MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials )
 	{
-		$self           = new self;
-		$self->partials = $partials;
-		$self->context  = array( $value );
-
-		/** @var MustacheNode $node */
-		foreach ( $document as $node )
-			$node->acceptVisitor( $self );
+		$self = new self( $document, $value, $partials );
 
 		return $self->result;
 	}
 
-	private function __construct() { }
+	private function __construct( MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials )
+	{
+		$this->partials = $partials;
+		$this->context  = array( $value );
+
+		/** @var MustacheNode $node */
+		foreach ( $document as $node )
+			$node->acceptVisitor( $this );
+	}
 
 	function visitText( MustacheNodeText $text )
 	{
@@ -50,7 +49,7 @@ final class MustacheProcessor extends MustacheNodeVisitor
 		$this->result .= htmlspecialchars( $this->variableText( $var ), ENT_COMPAT );
 	}
 
-	function visitVariableUnEscaped( MustacheNodeVariableUnescaped $var )
+	function visitVariableUnEscaped( MustacheNodeVariableUnEscaped $var )
 	{
 		$this->result .= $this->variableText( $var );
 	}

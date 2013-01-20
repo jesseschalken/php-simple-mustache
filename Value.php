@@ -122,10 +122,7 @@ final class MustacheValueObject extends MustacheValue
 
 	function property( $name )
 	{
-		if ( isset( $this->object[ $name ] ) )
-			return $this->object[ $name ];
-		else
-			return parent::property( $name );
+		return isset( $this->object[ $name ] ) ? $this->object[ $name ] : parent::property( $name );
 	}
 
 	function toList()

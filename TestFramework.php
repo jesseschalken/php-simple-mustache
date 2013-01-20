@@ -21,8 +21,7 @@ abstract class Test
 		}
 		catch ( Exception $e )
 		{
-			$this->printIndented( "$indent  ",
-			                      "" . "\n" . $this->description() . "\n" . $e->__toString() . "\n" . "\n" );
+			$this->printIndented( "$indent  ", "\n" . $this->description() . "\n" . $e->__toString() . "\n\n" );
 		}
 	}
 

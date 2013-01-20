@@ -23,7 +23,7 @@ abstract class MustacheNodeVisitor
 
 	abstract function visitVariableEscaped( MustacheNodeVariableEscaped $variable );
 
-	abstract function visitVariableUnEscaped( MustacheNodeVariableUnescaped $variable );
+	abstract function visitVariableUnEscaped( MustacheNodeVariableUnEscaped $variable );
 
 	abstract function visitSectionNormal( MustacheNodeSectionNormal $section );
 
@@ -79,9 +79,7 @@ final class MustacheNodeComment extends MustacheNodeTag
 
 final class MustacheNodeSetDelimiters extends MustacheNodeTag
 {
-	private $openTag;
-	private $innerPadding;
-	private $closeTag;
+	private $openTag, $innerPadding, $closeTag;
 
 	function __construct( MustacheParsedTag $tag, MustacheParser $parser )
 	{
@@ -128,7 +126,7 @@ class MustacheNodeVariableEscaped extends MustacheNodeVariable
 	}
 }
 
-class MustacheNodeVariableUnescaped extends MustacheNodeVariable
+class MustacheNodeVariableUnEscaped extends MustacheNodeVariable
 {
 	function acceptVisitor( MustacheNodeVisitor $visitor )
 	{
@@ -242,7 +240,7 @@ final class MustacheDocument implements IteratorAggregate
 
 class MustacheNodeText extends MustacheNode
 {
-	private $text = '';
+	private $text;
 
 	function __construct( $text )
 	{
@@ -267,15 +265,11 @@ class MustacheNodeText extends MustacheNode
 
 final class MustacheParsedTag
 {
-	private $spaceBefore;
-	private $openTag;
-	private $sigil;
-	private $paddingBefore;
+	private $spaceBefore, $spaceAfter;
+	private $openTag, $closeTag;
+	private $sigil, $closeSigil;
+	private $paddingBefore, $paddingAfter;
 	private $content;
-	private $paddingAfter;
-	private $closeSigil;
-	private $closeTag;
-	private $spaceAfter;
 	private $isStandalone;
 
 	function __construct( MustacheParser $parser, &$textBefore )
@@ -327,7 +321,6 @@ final class MustacheParsedTag
 			case '^':
 				return new MustacheNodeSectionInverted( $this, $parser );
 			case '<':
-				return new MustacheNodePartial( $this );
 			case '>':
 				return new MustacheNodePartial( $this );
 			case '!':
@@ -335,9 +328,8 @@ final class MustacheParsedTag
 			case '=':
 				return new MustacheNodeSetDelimiters( $this, $parser );
 			case '&':
-				return new MustacheNodeVariableUnescaped( $this );
 			case '{':
-				return new MustacheNodeVariableUnescaped( $this );
+				return new MustacheNodeVariableUnEscaped( $this );
 			case '':
 				return new MustacheNodeVariableEscaped( $this );
 			default:
@@ -352,9 +344,7 @@ final class MustacheParsedTag
 
 	private function typeAllowsStandalone()
 	{
-		return $this->sigil != '{'
-		       && $this->sigil != '&'
-		       && $this->sigil != '';
+		return $this->sigil != '{' && $this->sigil != '&' && $this->sigil != '';
 	}
 
 	private function sigilRegex()

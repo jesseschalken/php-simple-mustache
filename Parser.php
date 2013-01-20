@@ -12,9 +12,7 @@ final class MustacheParser
 		return $document;
 	}
 
-	private $scanner;
-	private $openTag = '{{';
-	private $closeTag = '}}';
+	private $scanner, $openTag = '{{', $closeTag = '}}';
 
 	private function __construct( $template )
 	{
@@ -64,8 +62,7 @@ final class StringScannerMatchFailureException extends Exception
 
 final class StringScanner
 {
-	private $position = 0;
-	private $string;
+	private $position = 0, $string;
 
 	function __construct( $string )
 	{
