@@ -2,7 +2,7 @@
 
 final class MustacheParser
 {
-	public static function parse( $template )
+	static function parse( $template )
 	{
 		$parser   = new self( $template );
 		$document = new MustacheDocument( $parser );
@@ -21,38 +21,38 @@ final class MustacheParser
 		$this->scanner = new StringScanner( $template );
 	}
 
-	public function lineBoundaryRegex()
+	function lineBoundaryRegex()
 	{
 		return "\r\n|\n|^|$";
 	}
 
-	public function openTagRegex()
+	function openTagRegex()
 	{
 		return $this->escape( $this->openTag );
 	}
 
-	public function closeTagRegex()
+	function closeTagRegex()
 	{
 		return $this->escape( $this->closeTag );
 	}
 
-	public function setDelimiters( $openTag, $closeTag )
+	function setDelimiters( $openTag, $closeTag )
 	{
 		$this->openTag  = $openTag;
 		$this->closeTag = $closeTag;
 	}
 
-	public function escape( $text )
+	function escape( $text )
 	{
 		return $this->scanner->escape( $text );
 	}
 
-	public function scanText( $regex )
+	function scanText( $regex )
 	{
 		return $this->scanner->scanText( $regex );
 	}
 
-	public function textMatches( $regex )
+	function textMatches( $regex )
 	{
 		return $this->scanner->textMatches( $regex );
 	}
@@ -67,17 +67,17 @@ final class StringScanner
 	private $position = 0;
 	private $string;
 
-	public function __construct( $string )
+	function __construct( $string )
 	{
 		$this->string = $string;
 	}
 
-	public function escape( $text )
+	function escape( $text )
 	{
 		return preg_quote( $text, '/' );
 	}
 
-	public function scanText( $regex )
+	function scanText( $regex )
 	{
 		$match = $this->matchText( $regex );
 
@@ -88,7 +88,7 @@ final class StringScanner
 		return $match;
 	}
 
-	public function textMatches( $regex )
+	function textMatches( $regex )
 	{
 		try
 		{

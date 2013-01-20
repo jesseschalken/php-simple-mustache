@@ -36,8 +36,8 @@ class MustacheTest extends Test
 
 class MustacheSpecFile extends Test
 {
-	public $specFileName;
-	public $specFileJson;
+	var $specFileName;
+	var $specFileJson;
 
 	protected function name()
 	{
@@ -66,7 +66,7 @@ class MustacheSpecFile extends Test
 
 class MustacheTestCase extends Test
 {
-	public $jsonTest;
+	var $jsonTest;
 
 	protected function name()
 	{

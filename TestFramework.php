@@ -2,7 +2,7 @@
 
 abstract class Test
 {
-	public final function run( $indent = '' )
+	final function run( $indent = '' )
 	{
 		$this->runSelf( $indent );
 

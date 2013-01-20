@@ -2,7 +2,7 @@
 
 abstract class MustacheValue
 {
-	public static function reflect( $v )
+	static function reflect( $v )
 	{
 		if ( is_null( $v ) )
 			return new MustacheValueFalsey;
@@ -33,22 +33,22 @@ abstract class MustacheValue
 			return new MustacheValueObject( $array );
 	}
 
-	public function hasProperty( $name )
+	function hasProperty( $name )
 	{
 		return false;
 	}
 
-	public function property( $name )
+	function property( $name )
 	{
 		return new MustacheValueFalsey;
 	}
 
-	public function text()
+	function text()
 	{
 		return '';
 	}
 
-	public function toList()
+	function toList()
 	{
 		return array();
 	}
@@ -60,7 +60,7 @@ final class MustacheValueFalsey extends MustacheValue
 
 final class MustacheValueTruthy extends MustacheValue
 {
-	public function toList()
+	function toList()
 	{
 		return array( new MustacheValueFalsey );
 	}
@@ -70,12 +70,12 @@ final class MustacheValueText extends MustacheValue
 {
 	private $text;
 
-	public function __construct( $text )
+	function __construct( $text )
 	{
 		$this->text = $text;
 	}
 
-	public function text()
+	function text()
 	{
 		return $this->text;
 	}
@@ -85,12 +85,12 @@ final class MustacheValueList extends MustacheValue
 {
 	private $array;
 
-	public function __construct( array $array )
+	function __construct( array $array )
 	{
 		$this->array = $array;
 	}
 
-	public function toList()
+	function toList()
 	{
 		return $this->array;
 	}
@@ -100,17 +100,17 @@ final class MustacheValueObject extends MustacheValue
 {
 	private $object;
 
-	public function __construct( array $object )
+	function __construct( array $object )
 	{
 		$this->object = $object;
 	}
 
-	public function hasProperty( $name )
+	function hasProperty( $name )
 	{
 		return isset( $this->object[$name] );
 	}
 
-	public function property( $name )
+	function property( $name )
 	{
 		if ( isset( $this->object[$name] ) )
 			return $this->object[$name];
@@ -118,7 +118,7 @@ final class MustacheValueObject extends MustacheValue
 			return parent::property( $name );
 	}
 
-	public function toList()
+	function toList()
 	{
 		return array( $this );
 	}

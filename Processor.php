@@ -7,7 +7,7 @@ final class MustacheProcessor extends MustacheNodeVisitor
 	/** @var MustachePartialProvider */
 	private $partials;
 
-	public static function process( MustacheDocument $document,
+	static function process( MustacheDocument $document,
 	                                MustacheValue $value,
 	                                MustachePartialProvider $partials )
 	{
@@ -24,20 +24,20 @@ final class MustacheProcessor extends MustacheNodeVisitor
 
 	private function __construct() { }
 
-	public function visitText( MustacheNodeText $text )
+	function visitText( MustacheNodeText $text )
 	{
 		$this->result .= $text->text();
 	}
 
-	public function visitComment( MustacheNodeComment $comment )
+	function visitComment( MustacheNodeComment $comment )
 	{
 	}
 
-	public function visitSetDelimiters( MustacheNodeSetDelimiters $setDelimiter )
+	function visitSetDelimiters( MustacheNodeSetDelimiters $setDelimiter )
 	{
 	}
 
-	public function visitPartial( MustacheNodePartial $partial )
+	function visitPartial( MustacheNodePartial $partial )
 	{
 		$text = $this->partials->partial( $partial->name() );
 		$text = self::indentText( $partial->indent(), $text );
@@ -47,23 +47,23 @@ final class MustacheProcessor extends MustacheNodeVisitor
 			$node->acceptVisitor( $this );
 	}
 
-	public function visitVariableEscaped( MustacheNodeVariableEscaped $var )
+	function visitVariableEscaped( MustacheNodeVariableEscaped $var )
 	{
 		$this->result .= htmlspecialchars( $this->variableText( $var ), ENT_COMPAT );
 	}
 
-	public function visitVariableUnEscaped( MustacheNodeVariableUnescaped $var )
+	function visitVariableUnEscaped( MustacheNodeVariableUnescaped $var )
 	{
 		$this->result .= $this->variableText( $var );
 	}
 
-	public function visitSectionNormal( MustacheNodeSectionNormal $section )
+	function visitSectionNormal( MustacheNodeSectionNormal $section )
 	{
 		foreach ( $this->sectionValues( $section ) as $value )
 			$this->renderSectionValue( $value, $section );
 	}
 
-	public function visitSectionInverted( MustacheNodeSectionInverted $section )
+	function visitSectionInverted( MustacheNodeSectionInverted $section )
 	{
 		foreach ( $this->sectionValues( $section ) as $v )
 			return;
