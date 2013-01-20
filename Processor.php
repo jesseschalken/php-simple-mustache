@@ -16,8 +16,7 @@ final class MustacheProcessor extends MustacheNodeVisitor
 		$this->partials = $partials;
 		$this->context  = array( $value );
 
-		/** @var MustacheNode $node */
-		foreach ( $document as $node )
+		foreach ( $document->nodes() as $node )
 			$node->acceptVisitor( $this );
 	}
 
@@ -39,8 +38,7 @@ final class MustacheProcessor extends MustacheNodeVisitor
 		$text = $this->partials->partial( $partial->name() );
 		$text = self::indentText( $partial->indent(), $text );
 
-		/** @var MustacheNode $node */
-		foreach ( MustacheParser::parse( $text ) as $node )
+		foreach ( MustacheParser::parse( $text )->nodes() as $node )
 			$node->acceptVisitor( $this );
 	}
 
@@ -77,8 +75,7 @@ final class MustacheProcessor extends MustacheNodeVisitor
 	{
 		$this->pushContext( $value );
 
-		/** @var MustacheNode $node */
-		foreach ( $section as $node )
+		foreach ( $section->nodes() as $node )
 			$node->acceptVisitor( $this );
 
 		$this->popContext();

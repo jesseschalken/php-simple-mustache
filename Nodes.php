@@ -2,12 +2,11 @@
 
 abstract class MustacheNodeVisitor
 {
-	final function map( Traversable $nodes )
+	final function map( HasMustacheNodes $nodes )
 	{
 		$results = array();
 
-		/** @var MustacheNode $node */
-		foreach ( $nodes as $k => $node )
+		foreach ( $nodes->nodes() as $k => $node )
 			$results[ $k ] = $node->acceptVisitor( $this );
 
 		return $results;
@@ -37,6 +36,12 @@ abstract class MustacheNode
 	abstract function originalText();
 
 	function __construct() { }
+}
+
+interface HasMustacheNodes
+{
+	/** @return MustacheNode[] */
+	function nodes();
 }
 
 abstract class MustacheNodeTag extends MustacheNode
@@ -147,8 +152,9 @@ final class MustacheNodePartial extends MustacheNodeTag
 	}
 }
 
-final class MustacheNodeStream implements IteratorAggregate
+final class MustacheNodeStream implements HasMustacheNodes
 {
+	/** @var MustacheNode[] */
 	private $nodes = array();
 	/** @var MustacheParsedTag[] */
 	private $closeSectionTag = array();
@@ -194,8 +200,7 @@ final class MustacheNodeStream implements IteratorAggregate
 	{
 		$result = '';
 
-		/** @var MustacheNode $node */
-		foreach ( $this as $node )
+		foreach ( $this->nodes() as $node )
 			$result .= $node->originalText();
 
 		foreach ( $this->closeSectionTag as $tag )
@@ -204,9 +209,9 @@ final class MustacheNodeStream implements IteratorAggregate
 		return $result;
 	}
 
-	function getIterator()
+	function nodes()
 	{
-		return new ArrayIterator( $this->nodes );
+		return $this->nodes;
 	}
 
 	function closeSectionTag()
@@ -215,7 +220,7 @@ final class MustacheNodeStream implements IteratorAggregate
 	}
 }
 
-final class MustacheDocument implements IteratorAggregate
+final class MustacheDocument implements HasMustacheNodes
 {
 	private $nodes;
 
@@ -232,9 +237,9 @@ final class MustacheDocument implements IteratorAggregate
 		return $this->nodes->originalText();
 	}
 
-	function getIterator()
+	function nodes()
 	{
-		return $this->nodes->getIterator();
+		return $this->nodes->nodes();
 	}
 }
 
@@ -382,7 +387,7 @@ final class MustacheParsedTag
 	}
 }
 
-abstract class MustacheNodeSection extends MustacheNodeTag implements IteratorAggregate
+abstract class MustacheNodeSection extends MustacheNodeTag implements HasMustacheNodes
 {
 	private $nodes;
 
@@ -408,9 +413,9 @@ abstract class MustacheNodeSection extends MustacheNodeTag implements IteratorAg
 		return parent::originalText() . $this->nodes->originalText();
 	}
 
-	function getIterator()
+	function nodes()
 	{
-		return $this->nodes->getIterator();
+		return $this->nodes->nodes();
 	}
 
 	final function name()
