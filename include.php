@@ -8,6 +8,5 @@ require_once dirname( __FILE__ ) . "/Nodes.php";
 require_once dirname( __FILE__ ) . "/DumpAst.php";
 require_once dirname( __FILE__ ) . "/Processor.php";
 require_once dirname( __FILE__ ) . "/Value.php";
-require_once dirname( __FILE__ ) . "/ReflectionValue.php";
 require_once dirname( __FILE__ ) . "/PartialProvider.php";
 
