@@ -76,7 +76,15 @@ final class StringScanner
 
 	function scanText( $regex )
 	{
-		$match = $this->matchText( $regex );
+		$position = $this->position;
+		$string   = $this->string;
+
+		$match = $this->matchText( $regex, function ( $x ) { return $x; },
+			function () use ( $regex, $position, $string )
+			{
+				throw new StringScannerMatchFailureException(
+					"Regex $regex failed to match at offset $position in string " . json_encode( $string ) );
+			} );
 
 		$this->position += strlen( $match );
 
@@ -87,29 +95,19 @@ final class StringScanner
 
 	function textMatches( $regex )
 	{
-		try
-		{
-			$this->matchText( $regex );
-
-			return true;
-		}
-		catch ( StringScannerMatchFailureException $e )
-		{
-			return false;
-		}
+		return $this->matchText( $regex, function () { return true; }, function () { return false; } );
 	}
 
-	private function matchText( $regex )
+	private function matchText( $regex, Closure $success, Closure $fail )
 	{
 		preg_match( "/$regex/su", $this->string, $matches, PREG_OFFSET_CAPTURE, $this->position );
 
-		if ( isset( $matches[ 0 ][ 0 ], $matches[ 0 ][ 1 ] ) && $matches[ 0 ][ 1 ] === $this->position )
-			return $matches[ 0 ][ 0 ];
+		if ( !isset( $matches[ 0 ] ) )
+			return $fail();
 
-		$message =
-				"Regex $regex failed to match at offset $this->position in string " . json_encode( $this->string );
+		list( $text, $position ) = $matches[ 0 ];
 
-		throw new StringScannerMatchFailureException( $message );
+		return $position === $this->position ? $success( $text ) : $fail();
 	}
 }
 
