@@ -60,10 +60,8 @@ final class MustacheProcessor extends MustacheNodeVisitor
 
 	function visitSectionInverted( MustacheNodeSectionInverted $section )
 	{
-		foreach ( $this->sectionValues( $section ) as $v )
-			return;
-
-		$this->renderSectionValue( new MustacheValueFalsey, $section );
+		if ( !$this->sectionValues( $section ) )
+			$this->renderSectionValue( new MustacheValueFalsey, $section );
 	}
 
 	private function sectionValues( MustacheNodeSection $section )
@@ -101,10 +99,11 @@ final class MustacheProcessor extends MustacheNodeVisitor
 		if ( $name === '.' )
 			return $this->currentContext();
 
-		$v = null;
+		$parts = explode( '.', $name );
+		$v     = self::resolveProperty( $this->context, array_shift( $parts ) );
 
-		foreach ( explode( '.', $name ) as $part )
-			$v = self::resolveProperty( isset( $v ) ? array( $v ) : $this->context, $part );
+		foreach ( $parts as $part )
+			$v = self::resolveProperty( array( $v ), $part );
 
 		return $v;
 	}
@@ -122,14 +121,22 @@ final class MustacheProcessor extends MustacheNodeVisitor
 		return preg_replace( "/(?<=^|\r\n|\n)(?!$)/su", addcslashes( $indent, '\\$' ), $text );
 	}
 
-	private static function resolveProperty( array $context, $p )
+	/**
+	 * @param MustacheValue[] $context
+	 * @param string          $name
+	 *
+	 * @return MustacheValue
+	 */
+	private static function resolveProperty( array $context, $name )
 	{
-		/** @var MustacheValue $v */
-		foreach ( $context as $v )
-			if ( $v->hasProperty( $p ) )
-				return $v->property( $p );
+		$i = 0;
 
-		return new MustacheValueFalsey;
+		$getter = function () use ( $context, &$getter, $name, &$i )
+		{
+			return isset( $context[ $i ] ) ? $context[ $i++ ]->property( $name, $getter ) : new MustacheValueFalsey;
+		};
+
+		return $getter();
 	}
 }
 

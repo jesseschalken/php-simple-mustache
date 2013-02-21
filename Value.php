@@ -43,14 +43,15 @@ abstract class MustacheValue
 		return $keys !== array_keys( $keys );
 	}
 
-	function hasProperty( $name )
+	/**
+	 * @param          $name
+	 * @param callable $else
+	 *
+	 * @return MustacheValue
+	 */
+	function property( $name, Closure $else )
 	{
-		return false;
-	}
-
-	function property( $name )
-	{
-		return new MustacheValueFalsey;
+		return $else();
 	}
 
 	function text()
@@ -115,14 +116,9 @@ final class MustacheValueObject extends MustacheValue
 		$this->object = $object;
 	}
 
-	function hasProperty( $name )
+	function property( $name, Closure $else )
 	{
-		return isset( $this->object[ $name ] );
-	}
-
-	function property( $name )
-	{
-		return isset( $this->object[ $name ] ) ? $this->object[ $name ] : parent::property( $name );
+		return isset( $this->object[ $name ] ) ? $this->object[ $name ] : $else();
 	}
 
 	function toList()
