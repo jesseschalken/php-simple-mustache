@@ -21,7 +21,7 @@ abstract class MustacheValue {
             return self::reflectArray($v);
 
         if (is_object($v))
-            return self::reflectArray((array)$v);
+            return self::reflectArray(get_object_vars($v));
 
         throw new Exception("Unhandled type: " . gettype($v));
     }
