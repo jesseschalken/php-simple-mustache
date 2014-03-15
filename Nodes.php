@@ -79,9 +79,9 @@ final class MustacheNodeSetDelimiters extends MustacheNodeTag {
 
         $contentScanner = new StringScanner($this->tagContent());
 
-        $this->openTag      = $contentScanner->scanText("^\S+");
-        $this->innerPadding = $contentScanner->scanText("\s+");
-        $this->closeTag     = $contentScanner->scanText("\S+$");
+        $this->openTag      = $contentScanner->scanText("^\\S+");
+        $this->innerPadding = $contentScanner->scanText("\\s+");
+        $this->closeTag     = $contentScanner->scanText("\\S+$");
 
         $parser->setDelimiters($this->openTag, $this->closeTag);
     }
@@ -239,21 +239,21 @@ final class MustacheParsedTag {
         $textBefore = $this->scanUntilNextTag($parser);
 
         $this->isStandalone  = $parser->textMatches("(?<=$lineBoundary)");
-        $this->spaceBefore   = $parser->scanText("\s*");
+        $this->spaceBefore   = $parser->scanText("\\s*");
         $this->openTag       = $parser->scanText($parser->openTagRegex());
         $this->sigil         = $parser->scanText($this->sigilRegex());
-        $this->paddingBefore = $parser->scanText("\s*");
+        $this->paddingBefore = $parser->scanText("\\s*");
         $this->content       = $parser->scanText($this->contentRegex($parser));
-        $this->paddingAfter  = $parser->scanText("\s*");
+        $this->paddingAfter  = $parser->scanText("\\s*");
         $this->closeSigil    = $parser->scanText($this->closeSigilRegex($parser));
         $this->closeTag      = $parser->scanText($parser->closeTagRegex());
 
         $this->isStandalone = $this->isStandalone
                               && $this->typeAllowsStandalone()
-                              && $parser->textMatches("\s*?($lineBoundary)");
+                              && $parser->textMatches("\\s*?($lineBoundary)");
 
         if ($this->isStandalone) {
-            $this->spaceAfter = $parser->scanText("\s*?($lineBoundary)");
+            $this->spaceAfter = $parser->scanText("\\s*?($lineBoundary)");
         } else {
             $textBefore .= $this->spaceBefore;
             $this->spaceBefore = '';
@@ -265,7 +265,7 @@ final class MustacheParsedTag {
         $lineBoundary = $parser->lineBoundaryRegex();
         $openTag      = $parser->openTagRegex();
 
-        return $parser->scanText(".*?(?=\s*$openTag)(\s*($lineBoundary))?");
+        return $parser->scanText(".*?(?=\\s*$openTag)(\\s*($lineBoundary))?");
     }
 
     final function toNode(MustacheParser $parser) {
@@ -300,12 +300,12 @@ final class MustacheParsedTag {
     }
 
     private function sigilRegex() {
-        return "(#|\^|\/|\<|\>|\=|\!|&|\{)?";
+        return "(#|\\^|\\/|\\<|\\>|\\=|\\!|&|\\{)?";
     }
 
     private function contentRegex(MustacheParser $parser) {
         if ($this->sigil == '!' || $this->sigil == '=')
-            return ".*?(?=\s*" . $this->closeSigilRegex($parser) . $parser->closeTagRegex() . ")";
+            return ".*?(?=\\s*" . $this->closeSigilRegex($parser) . $parser->closeTagRegex() . ")";
         else
             return '(\w|[?!\/.-])*';
     }
