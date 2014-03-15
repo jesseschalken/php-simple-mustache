@@ -144,65 +144,30 @@ final class MustacheNodePartial extends MustacheNode {
     }
 }
 
-final class MustacheNodeStream implements HasMustacheNodes {
-    /** @var MustacheNode[] */
-    private $nodes = array();
-    /** @var MustacheParsedTag[] */
-    private $closeSectionTag = array();
+class MustacheNodeStream {
+    /**
+     * @param MustacheParser $parser
+     * @param MustacheParsedTag|null $closeTag
+     * @return MustacheNode[]
+     */
+    static function parse(MustacheParser $parser, &$closeTag = null) {
+        $nodes = array();
 
-    static function parse(MustacheParser $parser) {
-        $self = new self;
-        while (!$self->finished($parser))
-            $self->parseOneTag($parser);
+        while (!$closeTag && $parser->textMatches('.*' . $parser->openTagRegex())) {
+            $text = '';
+            $tag  = MustacheParsedTag::parse($parser, $text);
 
-        if (!$self->closeSectionTag)
-            $self->addText($parser->scanText('.*$'));
+            $nodes[] = new MustacheNodeText($text);
+            if ($tag->isCloseSectionTag())
+                $closeTag = $tag;
+            else
+                $nodes[] = $tag->toNode($parser);
+        }
 
-        return $self;
-    }
+        if (!$closeTag)
+            $nodes[] = new MustacheNodeText($parser->scanText('.*$'));
 
-    private function finished(MustacheParser $parser) {
-        return $this->closeSectionTag || !$parser->textMatches('.*' . $parser->openTagRegex());
-    }
-
-    private function parseOneTag(MustacheParser $parser) {
-        $text = '';
-        $tag  = MustacheParsedTag::parse($parser, $text);
-
-        $this->addText($text);
-        $this->addTag($parser, $tag);
-    }
-
-    private function addTag(MustacheParser $parser, MustacheParsedTag $tag) {
-        if ($tag->isCloseSectionTag())
-            $this->closeSectionTag[] = $tag;
-        else
-            $this->nodes[] = $tag->toNode($parser);
-    }
-
-    private function addText($text) {
-        if ($text !== '')
-            $this->nodes[] = new MustacheNodeText($text);
-    }
-
-    function originalText() {
-        $result = '';
-
-        foreach ($this->nodes() as $node)
-            $result .= $node->originalText();
-
-        foreach ($this->closeSectionTag as $tag)
-            $result .= $tag->originalText();
-
-        return $result;
-    }
-
-    function nodes() {
-        return $this->nodes;
-    }
-
-    function closeSectionTag() {
-        return $this->closeSectionTag;
+        return $nodes;
     }
 }
 
@@ -210,18 +175,23 @@ final class MustacheDocument implements HasMustacheNodes {
     private $nodes;
 
     function __construct(MustacheParser $parser) {
-        $this->nodes = MustacheNodeStream::parse($parser);
+        $this->nodes = MustacheNodeStream::parse($parser, $closeTag);
 
-        if ($this->nodes->closeSectionTag() !== array())
+        if ($closeTag)
             throw new Exception("Close of unopened section");
     }
 
     function originalText() {
-        return $this->nodes->originalText();
+        $result = '';
+
+        foreach ($this->nodes as $node)
+            $result .= $node->originalText();
+
+        return $result;
     }
 
     function nodes() {
-        return $this->nodes->nodes();
+        return $this->nodes;
     }
 }
 
@@ -282,6 +252,9 @@ final class MustacheParsedTag {
         }
 
         return $self;
+    }
+
+    private function __construct() {
     }
 
     private function scanUntilNextTag(MustacheParser $parser) {
@@ -362,33 +335,38 @@ class MustacheNodeSection extends MustacheNode implements HasMustacheNodes {
     private $nodes;
     private $isInverted;
     /** @var MustacheParsedTag */
-    private $tag;
+    private $startTag;
+    /** @var MustacheParsedTag */
+    private $endTag;
 
     function __construct(MustacheParsedTag $startTag, MustacheParser $parser, $isInverted) {
-        $this->tag        = $startTag;
+        $this->startTag   = $startTag;
         $this->isInverted = $isInverted;
-        $this->nodes      = MustacheNodeStream::parse($parser);
+        $this->nodes      = MustacheNodeStream::parse($parser, $this->endTag);
 
-        foreach ($this->nodes->closeSectionTag() as $tag) {
-            if ($tag->content() != $startTag->content())
-                throw new Exception("Open section/close section mismatch");
-
-            return;
-        }
-
-        throw new Exception("Section left unclosed");
+        if (!$this->endTag)
+            throw new Exception("Section left unclosed");
+        if ($this->endTag->content() !== $startTag->content())
+            throw new Exception("Open section/close section mismatch");
     }
 
     function originalText() {
-        return $this->tag->originalText() . $this->nodes->originalText();
+        $result = '';
+
+        foreach ($this->nodes as $node)
+            $result .= $node->originalText();
+
+        $startTag = $this->startTag->originalText();
+        $endTag   = $this->endTag->originalText();
+        return "$startTag$result$endTag";
     }
 
     function nodes() {
-        return $this->nodes->nodes();
+        return $this->nodes;
     }
 
     final function name() {
-        return $this->tag->content();
+        return $this->startTag->content();
     }
 
     function acceptVisitor(MustacheNodeVisitor $visitor) {
