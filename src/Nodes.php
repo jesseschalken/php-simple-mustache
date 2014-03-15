@@ -112,13 +112,13 @@ final class MustacheNodePartial extends MustacheNode {
     }
 }
 
-class MustacheNodeStream {
+class MustacheDocument extends MustacheNode {
     /**
      * @param MustacheParser $parser
      * @param MustacheParsedTag|null $closeTag
      * @return MustacheNode[]
      */
-    static function parse(MustacheParser $parser, &$closeTag = null) {
+    static function parseNodes(MustacheParser $parser, &$closeTag = null) {
         $nodes = array();
 
         while (!$closeTag && $parser->textMatches('.*' . $parser->openTagRegex())) {
@@ -137,16 +137,23 @@ class MustacheNodeStream {
 
         return $nodes;
     }
-}
 
-final class MustacheDocument {
-    private $nodes;
-
-    function __construct(MustacheParser $parser) {
-        $this->nodes = MustacheNodeStream::parse($parser, $closeTag);
+    static function parse(MustacheParser $parser) {
+        $nodes = self::parseNodes($parser, $closeTag);
 
         if ($closeTag)
             throw new Exception("Close of unopened section");
+
+        return new self($nodes);
+    }
+
+    private $nodes;
+
+    /**
+     * @param MustacheNode[] $nodes
+     */
+    function __construct(array $nodes) {
+        $this->nodes = $nodes;
     }
 
     function originalText() {
@@ -160,6 +167,15 @@ final class MustacheDocument {
 
     function nodes() {
         return $this->nodes;
+    }
+
+    function process(MustacheProcessor $visitor) {
+        $result = '';
+
+        foreach ($this->nodes as $node)
+            $result .= $node->process($visitor);
+
+        return $result;
     }
 }
 
@@ -235,9 +251,9 @@ final class MustacheParsedTag {
     final function toNode(MustacheParser $parser) {
         switch ($this->sigil) {
             case '#':
-                return new MustacheNodeSection($this, $parser, false);
+                return MustacheNodeSection::parse2($this, $parser, false);
             case '^':
-                return new MustacheNodeSection($this, $parser, true);
+                return MustacheNodeSection::parse2($this, $parser, true);
             case '<':
             case '>':
                 return new MustacheNodePartial($this);
@@ -299,38 +315,35 @@ final class MustacheParsedTag {
     }
 }
 
-class MustacheNodeSection extends MustacheNode {
-    private $nodes;
+class MustacheNodeSection extends MustacheDocument {
+    static function parse2(MustacheParsedTag $startTag, MustacheParser $parser, $isInverted) {
+        /** @var MustacheParsedTag $endTag */
+        $nodes = self::parseNodes($parser, $endTag);
+
+        if (!$endTag)
+            throw new Exception("Section left unclosed");
+        if ($endTag->content() !== $startTag->content())
+            throw new Exception("Open section/close section mismatch");
+
+        return new self($nodes, $startTag, $endTag, $isInverted);
+    }
+
     private $isInverted;
-    /** @var MustacheParsedTag */
     private $startTag;
-    /** @var MustacheParsedTag */
     private $endTag;
 
-    function __construct(MustacheParsedTag $startTag, MustacheParser $parser, $isInverted) {
+    function __construct(array $nodes, MustacheParsedTag $startTag, MustacheParsedTag $endTag, $isInverted) {
+        parent::__construct($nodes);
         $this->startTag   = $startTag;
+        $this->endTag     = $endTag;
         $this->isInverted = $isInverted;
-        $this->nodes      = MustacheNodeStream::parse($parser, $this->endTag);
-
-        if (!$this->endTag)
-            throw new Exception("Section left unclosed");
-        if ($this->endTag->content() !== $startTag->content())
-            throw new Exception("Open section/close section mismatch");
     }
 
     function originalText() {
-        $result = '';
-
-        foreach ($this->nodes as $node)
-            $result .= $node->originalText();
-
         $startTag = $this->startTag->originalText();
+        $inner    = parent::originalText();
         $endTag   = $this->endTag->originalText();
-        return "$startTag$result$endTag";
-    }
-
-    function nodes() {
-        return $this->nodes;
+        return "$startTag$inner$endTag";
     }
 
     final function name() {
