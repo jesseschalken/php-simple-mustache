@@ -1,5 +1,9 @@
 <?php
 
+namespace SimpleMustache;
+
+use Exception;
+
 abstract class MustacheNodeVisitor {
     final function map(HasMustacheNodes $nodes) {
         $results = array();

@@ -1,5 +1,9 @@
 <?php
 
+namespace SimpleMustache;
+
+use Exception;
+
 abstract class Test {
     final function run($indent = '') {
         $this->runSelf($indent);

@@ -1,5 +1,10 @@
 <?php
 
+namespace SimpleMustache;
+
+use Closure;
+use Exception;
+
 abstract class MustacheValue {
     static function reflect($v) {
         if (is_null($v))

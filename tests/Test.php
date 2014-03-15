@@ -1,5 +1,11 @@
 <?php
 
+namespace SimpleMustache;
+
+use DirectoryIterator;
+use RegexIterator;
+use SplFileInfo;
+
 class MustacheTest extends Test {
     protected function name() {
         return 'Official Mustache spec';

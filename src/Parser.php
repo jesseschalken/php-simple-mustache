@@ -1,5 +1,10 @@
 <?php
 
+namespace SimpleMustache;
+
+use Closure;
+use Exception;
+
 final class MustacheParser {
     static function parse($template) {
         $parser   = new self($template);

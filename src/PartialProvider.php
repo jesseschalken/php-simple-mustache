@@ -1,5 +1,7 @@
 <?php
 
+namespace SimpleMustache;
+
 abstract class MustachePartialProvider {
     function partial($name) {
         return '';

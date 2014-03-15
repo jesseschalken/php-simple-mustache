@@ -1,5 +1,7 @@
 <?php
 
+namespace SimpleMustache;
+
 final class MustacheProcessor extends MustacheNodeVisitor {
     private $context, $result = '', $partials;
 
