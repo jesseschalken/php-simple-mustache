@@ -132,14 +132,5 @@ final class MustacheProcessor {
 
         return $getter();
     }
-
-    final function map(HasMustacheNodes $nodes) {
-        $results = array();
-
-        foreach ($nodes->nodes() as $k => $node)
-            $results[$k] = $node->process($this);
-
-        return $results;
-    }
 }
 

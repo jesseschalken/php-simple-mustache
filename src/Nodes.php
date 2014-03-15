@@ -10,11 +10,6 @@ abstract class MustacheNode {
     abstract function originalText();
 }
 
-interface HasMustacheNodes {
-    /** @return MustacheNode[] */
-    function nodes();
-}
-
 final class MustacheNodeComment extends MustacheNode {
     /** @var MustacheParsedTag */
     private $tag;
@@ -144,7 +139,7 @@ class MustacheNodeStream {
     }
 }
 
-final class MustacheDocument implements HasMustacheNodes {
+final class MustacheDocument {
     private $nodes;
 
     function __construct(MustacheParser $parser) {
@@ -304,7 +299,7 @@ final class MustacheParsedTag {
     }
 }
 
-class MustacheNodeSection extends MustacheNode implements HasMustacheNodes {
+class MustacheNodeSection extends MustacheNode {
     private $nodes;
     private $isInverted;
     /** @var MustacheParsedTag */
