@@ -6,8 +6,6 @@ use Exception;
 
 abstract class MustacheNode {
     abstract function process(MustacheProcessor $visitor);
-
-    abstract function originalText();
 }
 
 final class MustacheNodeComment extends MustacheNode {
@@ -20,10 +18,6 @@ final class MustacheNodeComment extends MustacheNode {
 
     function process(MustacheProcessor $visitor) {
         return $visitor->visitComment();
-    }
-
-    function originalText() {
-        return $this->tag->originalText();
     }
 }
 
@@ -52,10 +46,6 @@ final class MustacheNodeSetDelimiters extends MustacheNode {
     function process(MustacheProcessor $visitor) {
         return $visitor->visitSetDelimiters();
     }
-
-    function originalText() {
-        return $this->tag->originalText();
-    }
 }
 
 class MustacheNodeVariable extends MustacheNode {
@@ -70,10 +60,6 @@ class MustacheNodeVariable extends MustacheNode {
 
     function name() {
         return $this->tag->content();
-    }
-
-    function originalText() {
-        return $this->tag->originalText();
     }
 
     function process(MustacheProcessor $visitor) {
@@ -98,10 +84,6 @@ final class MustacheNodePartial extends MustacheNode {
 
     function name() {
         return $this->tag->content();
-    }
-
-    function originalText() {
-        return $this->tag->originalText();
     }
 
     function indent() {
@@ -153,15 +135,6 @@ class MustacheDocument extends MustacheNode {
         $this->nodes = $nodes;
     }
 
-    function originalText() {
-        $result = '';
-
-        foreach ($this->nodes as $node)
-            $result .= $node->originalText();
-
-        return $result;
-    }
-
     function nodes() {
         return $this->nodes;
     }
@@ -188,10 +161,6 @@ class MustacheNodeText extends MustacheNode {
     }
 
     function text() {
-        return $this->text;
-    }
-
-    function originalText() {
         return $this->text;
     }
 }
@@ -334,13 +303,6 @@ class MustacheNodeSection extends MustacheDocument {
         $this->startTag   = $startTag;
         $this->endTag     = $endTag;
         $this->isInverted = $isInverted;
-    }
-
-    function originalText() {
-        $startTag = $this->startTag->originalText();
-        $inner    = parent::originalText();
-        $endTag   = $this->endTag->originalText();
-        return "$startTag$inner$endTag";
     }
 
     final function name() {

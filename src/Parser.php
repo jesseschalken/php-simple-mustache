@@ -7,12 +7,7 @@ use Exception;
 
 final class MustacheParser {
     static function parse($template) {
-        $parser   = new self($template);
-        $document = MustacheDocument::parse($parser);
-
-        \PHPUnit_Framework_TestCase::assertEquals($template, $document->originalText());
-
-        return $document;
+        return MustacheDocument::parse(new self($template));
     }
 
     private $scanner, $openTag = '{{', $closeTag = '}}';
