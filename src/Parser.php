@@ -10,7 +10,7 @@ final class MustacheParser {
         $parser   = new self($template);
         $document = new MustacheDocument($parser);
 
-        assert($document->originalText() === $template);
+        \PHPUnit_Framework_TestCase::assertEquals($template, $document->originalText());
 
         return $document;
     }

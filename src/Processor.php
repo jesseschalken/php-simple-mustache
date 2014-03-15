@@ -45,12 +45,12 @@ final class MustacheProcessor extends MustacheNodeVisitor {
         $this->result .= $this->variableText($var);
     }
 
-    function visitSectionNormal(MustacheNodeSectionNormal $section) {
+    function visitSectionNormal(MustacheNodeSection $section) {
         foreach ($this->sectionValues($section) as $value)
             $this->renderSectionValue($value, $section);
     }
 
-    function visitSectionInverted(MustacheNodeSectionInverted $section) {
+    function visitSectionInverted(MustacheNodeSection $section) {
         if (!$this->sectionValues($section))
             $this->renderSectionValue(new MustacheValueFalsey, $section);
     }

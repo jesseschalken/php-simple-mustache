@@ -11,7 +11,7 @@ class MustacheTest extends \PHPUnit_Framework_TestCase {
         /** @var SplFileInfo $file */
         $files = new RegexIterator(new DirectoryIterator(__DIR__ . "/../spec/specs"), '/^[^~].*\.json$/');
         foreach ($files as $file) {
-            $name = $file->getFilename();
+            $name  = $file->getFilename();
             $json1 = json_decode(file_get_contents($file->getPathname()), true);
 
             echo "Testing $name...\n";
