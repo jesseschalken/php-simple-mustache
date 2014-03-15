@@ -42,7 +42,7 @@ interface HasMustacheNodes {
     function nodes();
 }
 
-abstract class MustacheNodeTag extends MustacheNode {
+final class MustacheNodeComment extends MustacheNode {
     /** @var MustacheParsedTag */
     private $tag;
 
@@ -50,35 +50,27 @@ abstract class MustacheNodeTag extends MustacheNode {
         $this->tag = $tag;
     }
 
-    protected final function tagContent() {
-        return $this->tag->content();
+    function acceptVisitor(MustacheNodeVisitor $visitor) {
+        return $visitor->visitComment($this);
     }
 
     function originalText() {
         return $this->tag->originalText();
     }
-
-    final function indent() {
-        return $this->tag->indent();
-    }
 }
 
-final class MustacheNodeComment extends MustacheNodeTag {
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
-        return $visitor->visitComment($this);
-    }
-
-    final function text() {
-        return $this->tagContent();
-    }
-}
-
-final class MustacheNodeSetDelimiters extends MustacheNodeTag {
+final class MustacheNodeSetDelimiters extends MustacheNode {
     private $openTag, $innerPadding, $closeTag;
+    /** @var MustacheParsedTag */
+    private $tag;
+
+    function __construct(MustacheParsedTag $tag) {
+        $this->tag = $tag;
+    }
 
     static function parse(MustacheParsedTag $tag, MustacheParser $parser) {
         $self           = new self($tag);
-        $contentScanner = new StringScanner($self->tagContent());
+        $contentScanner = new StringScanner($tag->content());
 
         $self->openTag      = $contentScanner->scanText("^\\S+");
         $self->innerPadding = $contentScanner->scanText("\\s+");
@@ -93,18 +85,25 @@ final class MustacheNodeSetDelimiters extends MustacheNodeTag {
         return $visitor->visitSetDelimiters($this);
     }
 
-    final function openTag() {
-        return $this->openTag;
-    }
-
-    final function closeTag() {
-        return $this->closeTag;
+    function originalText() {
+        return $this->tag->originalText();
     }
 }
 
-abstract class MustacheNodeVariable extends MustacheNodeTag {
-    final function name() {
-        return $this->tagContent();
+abstract class MustacheNodeVariable extends MustacheNode {
+    /** @var MustacheParsedTag */
+    private $tag;
+
+    function __construct(MustacheParsedTag $tag) {
+        $this->tag = $tag;
+    }
+
+    function name() {
+        return $this->tag->content();
+    }
+
+    function originalText() {
+        return $this->tag->originalText();
     }
 }
 
@@ -120,13 +119,28 @@ class MustacheNodeVariableUnEscaped extends MustacheNodeVariable {
     }
 }
 
-final class MustacheNodePartial extends MustacheNodeTag {
+final class MustacheNodePartial extends MustacheNode {
+    /** @var MustacheParsedTag */
+    private $tag;
+
+    function __construct(MustacheParsedTag $tag) {
+        $this->tag = $tag;
+    }
+
     function acceptVisitor(MustacheNodeVisitor $visitor) {
         return $visitor->visitPartial($this);
     }
 
-    final function name() {
-        return $this->tagContent();
+    function name() {
+        return $this->tag->content();
+    }
+
+    function originalText() {
+        return $this->tag->originalText();
+    }
+
+    function indent() {
+        return $this->tag->indent();
     }
 }
 
@@ -344,18 +358,19 @@ final class MustacheParsedTag {
     }
 }
 
-class MustacheNodeSection extends MustacheNodeTag implements HasMustacheNodes {
+class MustacheNodeSection extends MustacheNode implements HasMustacheNodes {
     private $nodes;
     private $isInverted;
+    /** @var MustacheParsedTag */
+    private $tag;
 
     function __construct(MustacheParsedTag $startTag, MustacheParser $parser, $isInverted) {
-        parent::__construct($startTag);
-
+        $this->tag        = $startTag;
         $this->isInverted = $isInverted;
         $this->nodes      = MustacheNodeStream::parse($parser);
 
         foreach ($this->nodes->closeSectionTag() as $tag) {
-            if ($tag->content() != $this->tagContent())
+            if ($tag->content() != $startTag->content())
                 throw new Exception("Open section/close section mismatch");
 
             return;
@@ -365,7 +380,7 @@ class MustacheNodeSection extends MustacheNodeTag implements HasMustacheNodes {
     }
 
     function originalText() {
-        return parent::originalText() . $this->nodes->originalText();
+        return $this->tag->originalText() . $this->nodes->originalText();
     }
 
     function nodes() {
@@ -373,7 +388,7 @@ class MustacheNodeSection extends MustacheNodeTag implements HasMustacheNodes {
     }
 
     final function name() {
-        return $this->tagContent();
+        return $this->tag->content();
     }
 
     function acceptVisitor(MustacheNodeVisitor $visitor) {
