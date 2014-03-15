@@ -1,0 +1,15 @@
+{
+    "name": "jesseschalken/simple-mustache",
+    "description": "A simple Mustache parser/processor",
+    "minimum-stability": "stable",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jesse Schalken",
+            "email": "me@jesseschalken.com"
+        }
+    ],
+    "autoload": {
+        "classmap": [""]
+    }
+}
