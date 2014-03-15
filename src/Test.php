@@ -9,12 +9,12 @@ use SplFileInfo;
 class MustacheTest extends \PHPUnit_Framework_TestCase {
     function testMustacheSpec() {
         /** @var SplFileInfo $file */
-        $files = new RegexIterator(new DirectoryIterator(__DIR__ . "/spec/specs"), '/^[^~].*\.json$/');
+        $files = new RegexIterator(new DirectoryIterator(__DIR__ . "/../spec/specs"), '/^[^~].*\.json$/');
         foreach ($files as $file) {
             $name = $file->getFilename();
-            echo "Testing $name...\n";
-
             $json1 = json_decode(file_get_contents($file->getPathname()), true);
+
+            echo "Testing $name...\n";
 
             foreach ($json1['tests'] as $json) {
                 $name     = $json['name'];
