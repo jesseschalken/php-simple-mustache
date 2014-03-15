@@ -4,35 +4,8 @@ namespace SimpleMustache;
 
 use Exception;
 
-abstract class MustacheNodeVisitor {
-    final function map(HasMustacheNodes $nodes) {
-        $results = array();
-
-        foreach ($nodes->nodes() as $k => $node)
-            $results[$k] = $node->acceptVisitor($this);
-
-        return $results;
-    }
-
-    abstract function visitText(MustacheNodeText $text);
-
-    abstract function visitComment(MustacheNodeComment $comment);
-
-    abstract function visitSetDelimiters(MustacheNodeSetDelimiters $setDelimiter);
-
-    abstract function visitPartial(MustacheNodePartial $partial);
-
-    abstract function visitVariableEscaped(MustacheNodeVariableEscaped $variable);
-
-    abstract function visitVariableUnEscaped(MustacheNodeVariableUnEscaped $variable);
-
-    abstract function visitSectionNormal(MustacheNodeSection $section);
-
-    abstract function visitSectionInverted(MustacheNodeSection $section);
-}
-
 abstract class MustacheNode {
-    abstract function acceptVisitor(MustacheNodeVisitor $visitor);
+    abstract function process(MustacheProcessor $visitor);
 
     abstract function originalText();
 }
@@ -50,8 +23,8 @@ final class MustacheNodeComment extends MustacheNode {
         $this->tag = $tag;
     }
 
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
-        return $visitor->visitComment($this);
+    function process(MustacheProcessor $visitor) {
+        return $visitor->visitComment();
     }
 
     function originalText() {
@@ -81,8 +54,8 @@ final class MustacheNodeSetDelimiters extends MustacheNode {
         return $self;
     }
 
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
-        return $visitor->visitSetDelimiters($this);
+    function process(MustacheProcessor $visitor) {
+        return $visitor->visitSetDelimiters();
     }
 
     function originalText() {
@@ -108,13 +81,13 @@ abstract class MustacheNodeVariable extends MustacheNode {
 }
 
 class MustacheNodeVariableEscaped extends MustacheNodeVariable {
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
+    function process(MustacheProcessor $visitor) {
         return $visitor->visitVariableEscaped($this);
     }
 }
 
 class MustacheNodeVariableUnEscaped extends MustacheNodeVariable {
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
+    function process(MustacheProcessor $visitor) {
         return $visitor->visitVariableUnEscaped($this);
     }
 }
@@ -127,7 +100,7 @@ final class MustacheNodePartial extends MustacheNode {
         $this->tag = $tag;
     }
 
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
+    function process(MustacheProcessor $visitor) {
         return $visitor->visitPartial($this);
     }
 
@@ -202,7 +175,7 @@ class MustacheNodeText extends MustacheNode {
         $this->text = $text;
     }
 
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
+    function process(MustacheProcessor $visitor) {
         return $visitor->visitText($this);
     }
 
@@ -369,7 +342,7 @@ class MustacheNodeSection extends MustacheNode implements HasMustacheNodes {
         return $this->startTag->content();
     }
 
-    function acceptVisitor(MustacheNodeVisitor $visitor) {
+    function process(MustacheProcessor $visitor) {
         if ($this->isInverted)
             return $visitor->visitSectionInverted($this);
         else

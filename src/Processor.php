@@ -2,57 +2,67 @@
 
 namespace SimpleMustache;
 
-final class MustacheProcessor extends MustacheNodeVisitor {
-    private $context, $result = '', $partials;
+final class MustacheProcessor {
+    private $context, $partials;
 
     static function process(MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials) {
         $self = new self($document, $value, $partials);
 
-        return $self->result;
+        $result = '';
+        foreach ($document->nodes() as $node)
+            $result .= $node->process($self);
+
+        return $result;
     }
 
     private function __construct(MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials) {
         $this->partials = $partials;
         $this->context  = array($value);
-
-        foreach ($document->nodes() as $node)
-            $node->acceptVisitor($this);
     }
 
     function visitText(MustacheNodeText $text) {
-        $this->result .= $text->text();
+        return $text->text();
     }
 
-    function visitComment(MustacheNodeComment $comment) {
+    function visitComment() {
+        return '';
     }
 
-    function visitSetDelimiters(MustacheNodeSetDelimiters $setDelimiter) {
+    function visitSetDelimiters() {
+        return '';
     }
 
     function visitPartial(MustacheNodePartial $partial) {
-        $text = $this->partials->partial($partial->name());
-        $text = self::indentText($partial->indent(), $text);
+        $result = '';
+        $text   = $this->partials->partial($partial->name());
+        $text   = self::indentText($partial->indent(), $text);
 
         foreach (MustacheParser::parse($text)->nodes() as $node)
-            $node->acceptVisitor($this);
+            $result .= $node->process($this);
+
+        return $result;
     }
 
     function visitVariableEscaped(MustacheNodeVariableEscaped $var) {
-        $this->result .= htmlspecialchars($this->variableText($var), ENT_COMPAT);
+        return htmlspecialchars($this->variableText($var), ENT_COMPAT);
     }
 
     function visitVariableUnEscaped(MustacheNodeVariableUnEscaped $var) {
-        $this->result .= $this->variableText($var);
+        return $this->variableText($var);
     }
 
     function visitSectionNormal(MustacheNodeSection $section) {
+        $result = '';
         foreach ($this->sectionValues($section) as $value)
-            $this->renderSectionValue($value, $section);
+            $result .= $this->renderSectionValue($value, $section);
+        return $result;
     }
 
     function visitSectionInverted(MustacheNodeSection $section) {
         if (!$this->sectionValues($section))
-            $this->renderSectionValue(new MustacheValueFalsey, $section);
+            return $this->renderSectionValue(new MustacheValueFalsey, $section);
+        else
+            return '';
     }
 
     private function sectionValues(MustacheNodeSection $section) {
@@ -62,10 +72,13 @@ final class MustacheProcessor extends MustacheNodeVisitor {
     private function renderSectionValue(MustacheValue $value, MustacheNodeSection $section) {
         $this->pushContext($value);
 
+        $result = '';
         foreach ($section->nodes() as $node)
-            $node->acceptVisitor($this);
+            $result .= $node->process($this);
 
         $this->popContext();
+
+        return $result;
     }
 
     private function variableText(MustacheNodeVariable $var) {
@@ -118,6 +131,15 @@ final class MustacheProcessor extends MustacheNodeVisitor {
         };
 
         return $getter();
+    }
+
+    final function map(HasMustacheNodes $nodes) {
+        $results = array();
+
+        foreach ($nodes->nodes() as $k => $node)
+            $results[$k] = $node->process($this);
+
+        return $results;
     }
 }
 
