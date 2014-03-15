@@ -10,6 +10,6 @@
         }
     ],
     "autoload": {
-        "classmap": [""]
+        "classmap": ["src", "tests"]
     }
 }
