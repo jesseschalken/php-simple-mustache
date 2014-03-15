@@ -58,12 +58,14 @@ final class MustacheNodeSetDelimiters extends MustacheNode {
     }
 }
 
-abstract class MustacheNodeVariable extends MustacheNode {
+class MustacheNodeVariable extends MustacheNode {
     /** @var MustacheParsedTag */
     private $tag;
+    private $isEscaped;
 
-    function __construct(MustacheParsedTag $tag) {
-        $this->tag = $tag;
+    function __construct(MustacheParsedTag $tag, $isEscaped) {
+        $this->tag       = $tag;
+        $this->isEscaped = $isEscaped;
     }
 
     function name() {
@@ -73,17 +75,12 @@ abstract class MustacheNodeVariable extends MustacheNode {
     function originalText() {
         return $this->tag->originalText();
     }
-}
 
-class MustacheNodeVariableEscaped extends MustacheNodeVariable {
     function process(MustacheProcessor $visitor) {
-        return $visitor->visitVariableEscaped($this);
-    }
-}
-
-class MustacheNodeVariableUnEscaped extends MustacheNodeVariable {
-    function process(MustacheProcessor $visitor) {
-        return $visitor->visitVariableUnEscaped($this);
+        if ($this->isEscaped)
+            return $visitor->visitVariableEscaped($this);
+        else
+            return $visitor->visitVariableUnEscaped($this);
     }
 }
 
@@ -263,9 +260,9 @@ final class MustacheParsedTag {
                 return MustacheNodeSetDelimiters::parse($this, $parser);
             case '&':
             case '{':
-                return new MustacheNodeVariableUnEscaped($this);
+                return new MustacheNodeVariable($this, false);
             case '':
-                return new MustacheNodeVariableEscaped($this);
+                return new MustacheNodeVariable($this, true);
             default:
                 throw new Exception("Unhandled sigil: $this->sigil");
         }

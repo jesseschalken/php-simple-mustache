@@ -43,11 +43,11 @@ final class MustacheProcessor {
         return $result;
     }
 
-    function visitVariableEscaped(MustacheNodeVariableEscaped $var) {
+    function visitVariableEscaped(MustacheNodeVariable $var) {
         return htmlspecialchars($this->variableText($var), ENT_COMPAT);
     }
 
-    function visitVariableUnEscaped(MustacheNodeVariableUnEscaped $var) {
+    function visitVariableUnEscaped(MustacheNodeVariable $var) {
         return $this->variableText($var);
     }
 
