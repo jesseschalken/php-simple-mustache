@@ -7,14 +7,27 @@ use RegexIterator;
 use SplFileInfo;
 
 class MustacheTest extends \PHPUnit_Framework_TestCase {
-    function testMustacheSpec() {
+    /**
+     * @param $data
+     * @param $template
+     * @param $expected
+     * @param $partials
+     * @dataProvider dataProvider
+     */
+    function testMustacheSpec($data, $template, $expected, $partials) {
+        $result = Mustache::run($template, $data, $partials);
+
+        $this->assertEquals($expected, $result);
+    }
+
+    function dataProvider() {
+        $result = array();
+
         /** @var SplFileInfo $file */
         $files = new RegexIterator(new DirectoryIterator(__DIR__ . "/../spec/specs"), '/^[^~].*\.json$/');
         foreach ($files as $file) {
-            $name  = $file->getFilename();
+            $fname = $file->getFilename();
             $json1 = json_decode(file_get_contents($file->getPathname()), true);
-
-            echo "Testing $name...\n";
 
             foreach ($json1['tests'] as $json) {
                 $name     = $json['name'];
@@ -23,13 +36,11 @@ class MustacheTest extends \PHPUnit_Framework_TestCase {
                 $expected = $json['expected'];
                 $partials = isset($json['partials']) ? $json['partials'] : array();
 
-                echo "  Testing $name...\n";
-
-                $result = Mustache::run($template, $data, $partials);
-
-                $this->assertEquals($expected, $result);
+                $result["$fname - $name"] = array($data, $template, $expected, $partials);
             }
         }
+
+        return $result;
     }
 }
 

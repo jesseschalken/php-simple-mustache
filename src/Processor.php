@@ -24,14 +24,6 @@ final class MustacheProcessor {
         return $text->text();
     }
 
-    function visitComment() {
-        return '';
-    }
-
-    function visitSetDelimiters() {
-        return '';
-    }
-
     function visitPartial(MustacheNodePartial $partial) {
         $result = '';
         $text   = $this->partials->partial($partial->name());

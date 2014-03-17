@@ -7,7 +7,7 @@ use Exception;
 
 final class MustacheParser {
     static function parse($template) {
-        return MustacheDocument::parse(new self($template));
+        return MustacheDocument::parse(MustacheTokenStream::parse(new self($template)));
     }
 
     private $scanner, $openTag = '{{', $closeTag = '}}';
