@@ -38,7 +38,7 @@ final class MustacheNodePartial extends MustacheNode {
     function process(MustacheContext $context, MustachePartials $partials) {
         $partial = $partials->partial($this->content);
         $partial = $this->indentText($partial);
-        $partial = MustacheParser::parse($partial);
+        $partial = MustacheDocument::parse($partial);
         $result  = $partial->process($context, $partials);
         return $result;
     }
@@ -49,6 +49,11 @@ final class MustacheNodePartial extends MustacheNode {
 }
 
 class MustacheDocument extends MustacheNode {
+    static function parse($template) {
+        $parser = new MustacheParser($template);
+        return new self($parser->parseNodes());
+    }
+
     private $nodes;
 
     /**

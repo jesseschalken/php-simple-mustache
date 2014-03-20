@@ -15,7 +15,10 @@ class MustacheTest extends \PHPUnit_Framework_TestCase {
      * @dataProvider dataProvider
      */
     function testMustacheSpec($data, $template, $expected, $partials) {
-        $result = Mustache::run($template, $data, $partials);
+        $result = MustacheDocument::parse($template)->process(
+            MustacheContext::fromValue(MustacheValue::reflect($data)),
+            new MustachePartialsArray($partials)
+        );
 
         $this->assertEquals($expected, $result);
     }

@@ -6,14 +6,9 @@ use Closure;
 use Exception;
 
 final class MustacheParser {
-    static function parse($template) {
-        $self = new self($template);
-        return new MustacheDocument($self->parseNodes());
-    }
-
     private $openTag = '{{', $closeTag = '}}';
 
-    private function __construct($template) {
+    function __construct($template) {
         $this->string = $template;
     }
 

@@ -3,10 +3,8 @@
 namespace SimpleMustache;
 
 abstract class MustacheContext {
-    static function process(MustacheDocument $document, MustacheValue $value, MustachePartials $partials) {
-        $context = new MustacheBaseContext;
-
-        return $document->process($context->extend($value), $partials);
+    static function fromValue(MustacheValue $value) {
+        return new MustacheExtendedContext(new MustacheBaseContext, $value);
     }
 
     function extend(MustacheValue $v) {
@@ -20,10 +18,8 @@ abstract class MustacheContext {
         $parts = explode('.', $name);
         $value = $this->resolveProperty(array_shift($parts));
 
-        foreach ($parts as $part) {
-            $context = new MustacheBaseContext;
-            $value   = $context->extend($value)->resolveProperty($part);
-        }
+        foreach ($parts as $part)
+            $value = self::fromValue($value)->resolveProperty($part);
 
         return $value;
     }
