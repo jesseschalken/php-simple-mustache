@@ -2,17 +2,17 @@
 
 namespace SimpleMustache;
 
-abstract class MustachePartials {
+abstract class Partials {
     /**
      * @param string $name
      * @return string
      */
-    function partial($name) {
+    function get($name) {
         return '';
     }
 }
 
-final class MustachePartialsArray extends MustachePartials {
+final class PartialsArray extends Partials {
     private $partials;
 
     /**
@@ -22,11 +22,11 @@ final class MustachePartialsArray extends MustachePartials {
         $this->partials = $partials;
     }
 
-    function partial($name) {
+    function get($name) {
         if (isset($this->partials[$name]))
             return $this->partials[$name];
 
-        return parent::partial($name);
+        return parent::get($name);
     }
 }
 

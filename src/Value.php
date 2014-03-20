@@ -4,28 +4,28 @@ namespace SimpleMustache;
 
 use Exception;
 
-abstract class MustacheValue {
+abstract class Value {
     static function reflect($v) {
         if (is_null($v))
-            return new MustacheValueFalsey;
+            return new ValueFalse;
 
         if (is_bool($v))
-            return $v ? new MustacheValueTruthy : new MustacheValueFalsey;
+            return $v ? new ValueTrue : new ValueFalse;
 
         if (is_string($v))
-            return new MustacheValueText($v);
+            return new ValueText($v);
 
         if (is_int($v))
-            return new MustacheValueText((string)$v);
+            return new ValueText((string)$v);
 
         if (is_float($v))
-            return new MustacheValueText((string)$v);
+            return new ValueText((string)$v);
 
         if (is_array($v))
-            return self::isAssoc($v) ? new MustacheValueObject($v) : new MustacheValueList($v);
+            return self::isAssoc($v) ? new ValueObject($v) : new ValueList($v);
 
         if (is_object($v))
-            return new MustacheValueObject(get_object_vars($v));
+            return new ValueObject(get_object_vars($v));
 
         throw new Exception("Unhandled type: " . gettype($v));
     }
@@ -44,7 +44,7 @@ abstract class MustacheValue {
 
     /**
      * @param $name
-     * @return MustacheValue
+     * @return Value
      * @throws \Exception
      */
     function getProperty($name) {
@@ -56,23 +56,23 @@ abstract class MustacheValue {
     }
 
     /**
-     * @return MustacheValue[]
+     * @return Value[]
      */
     function toList() {
         return array();
     }
 }
 
-final class MustacheValueFalsey extends MustacheValue {
+final class ValueFalse extends Value {
 }
 
-final class MustacheValueTruthy extends MustacheValue {
+final class ValueTrue extends Value {
     function toList() {
-        return array(new MustacheValueFalsey);
+        return array(new ValueFalse);
     }
 }
 
-final class MustacheValueText extends MustacheValue {
+final class ValueText extends Value {
     private $text;
 
     function __construct($text) {
@@ -84,7 +84,7 @@ final class MustacheValueText extends MustacheValue {
     }
 }
 
-final class MustacheValueList extends MustacheValue {
+final class ValueList extends Value {
     private $array;
 
     function __construct(array $array) {
@@ -94,12 +94,12 @@ final class MustacheValueList extends MustacheValue {
     function toList() {
         $result = array();
         foreach ($this->array as $x)
-            $result[] = MustacheValue::reflect($x);
+            $result[] = Value::reflect($x);
         return $result;
     }
 }
 
-final class MustacheValueObject extends MustacheValue {
+final class ValueObject extends Value {
     private $object;
 
     function __construct(array $object) {
@@ -111,7 +111,7 @@ final class MustacheValueObject extends MustacheValue {
     }
 
     function getProperty($name) {
-        return MustacheValue::reflect($this->object[$name]);
+        return Value::reflect($this->object[$name]);
     }
 
     function toList() {

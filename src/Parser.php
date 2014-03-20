@@ -5,7 +5,7 @@ namespace SimpleMustache;
 use Closure;
 use Exception;
 
-final class MustacheParser {
+final class Parser {
     private $openTag = '{{', $closeTag = '}}';
 
     function __construct($template) {
@@ -18,7 +18,7 @@ final class MustacheParser {
         $nodes = array();
 
         while ($this->textMatches('.*' . $this->escape($this->openTag))) {
-            $nodes[] = new MustacheNodeText(
+            $nodes[] = new NodeText(
                 $this->scanText(".*?(?=\\s*{$this->escape($this->openTag)})(\\s*($lineBoundary))?")
             );
 
@@ -45,7 +45,7 @@ final class MustacheParser {
             ) {
                 $this->scanText("\\s*?($lineBoundary)");
             } else {
-                $nodes[]     = new MustacheNodeText($spaceBefore);
+                $nodes[]     = new NodeText($spaceBefore);
                 $spaceBefore = '';
             }
 
@@ -56,23 +56,23 @@ final class MustacheParser {
                     $this->closeTag = $match[2];
                     break;
                 case '#':
-                    $nodes[] = new MustacheNodeSection(self::parseNodes($content), $content, false);
+                    $nodes[] = new NodeSection(self::parseNodes($content), $content, false);
                     break;
                 case '^':
-                    $nodes[] = new MustacheNodeSection(self::parseNodes($content), $content, true);
+                    $nodes[] = new NodeSection(self::parseNodes($content), $content, true);
                     break;
                 case '<':
                 case '>':
-                    $nodes[] = new MustacheNodePartial($content, $spaceBefore);
+                    $nodes[] = new NodePartial($content, $spaceBefore);
                     break;
                 case '!':
                     break;
                 case '&':
                 case '{':
-                    $nodes[] = new MustacheNodeVariable($content, false);
+                    $nodes[] = new NodeVariable($content, false);
                     break;
                 case '':
-                    $nodes[] = new MustacheNodeVariable($content, true);
+                    $nodes[] = new NodeVariable($content, true);
                     break;
                 case '/':
                     if ($openSection === null)
@@ -89,7 +89,7 @@ final class MustacheParser {
         if ($openSection !== null)
             throw new Exception("Unclosed section");
 
-        $nodes[] = new MustacheNodeText($this->scanText('.*$'));
+        $nodes[] = new NodeText($this->scanText('.*$'));
 
         return $nodes;
     }

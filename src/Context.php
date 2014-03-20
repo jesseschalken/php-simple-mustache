@@ -2,13 +2,13 @@
 
 namespace SimpleMustache;
 
-abstract class MustacheContext {
-    static function fromValue(MustacheValue $value) {
-        return new MustacheExtendedContext(new MustacheBaseContext, $value);
+abstract class Context {
+    static function fromValue(Value $value) {
+        return new ExtendedContext(new BaseContext, $value);
     }
 
-    function extend(MustacheValue $v) {
-        return new MustacheExtendedContext($this, $v);
+    function extend(Value $v) {
+        return new ExtendedContext($this, $v);
     }
 
     function resolveName($name) {
@@ -26,31 +26,31 @@ abstract class MustacheContext {
 
     /**
      * @param string $name
-     * @return MustacheValue
+     * @return Value
      */
     abstract function resolveProperty($name);
 
     /**
-     * @return MustacheValue
+     * @return Value
      */
     abstract function currentValue();
 }
 
-class MustacheBaseContext extends MustacheContext {
+class BaseContext extends Context {
     function resolveProperty($name) {
-        return new MustacheValueFalsey;
+        return new ValueFalse;
     }
 
     function currentValue() {
-        return new MustacheValueFalsey;
+        return new ValueFalse;
     }
 }
 
-class MustacheExtendedContext extends MustacheContext {
+class ExtendedContext extends Context {
     private $context;
     private $value;
 
-    function __construct(MustacheContext $context, MustacheValue $value) {
+    function __construct(Context $context, Value $value) {
         $this->context = $context;
         $this->value   = $value;
     }

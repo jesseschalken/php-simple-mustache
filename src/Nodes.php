@@ -2,11 +2,11 @@
 
 namespace SimpleMustache;
 
-abstract class MustacheNode {
-    abstract function process(MustacheContext $context, MustachePartials $partials);
+abstract class Node {
+    abstract function process(Context $context, Partials $partials);
 }
 
-class MustacheNodeVariable extends MustacheNode {
+class NodeVariable extends Node {
     private $isEscaped;
     private $name;
 
@@ -19,14 +19,14 @@ class MustacheNodeVariable extends MustacheNode {
         return $this->name;
     }
 
-    function process(MustacheContext $context, MustachePartials $partials) {
+    function process(Context $context, Partials $partials) {
         $result = $context->resolveName($this->name)->text();
 
         return $this->isEscaped ? htmlspecialchars($result, ENT_COMPAT) : $result;
     }
 }
 
-final class MustacheNodePartial extends MustacheNode {
+final class NodePartial extends Node {
     private $content;
     private $indent;
 
@@ -35,10 +35,10 @@ final class MustacheNodePartial extends MustacheNode {
         $this->indent  = $indent;
     }
 
-    function process(MustacheContext $context, MustachePartials $partials) {
-        $partial = $partials->partial($this->content);
+    function process(Context $context, Partials $partials) {
+        $partial = $partials->get($this->content);
         $partial = $this->indentText($partial);
-        $partial = MustacheDocument::parse($partial);
+        $partial = Document::parse($partial);
         $result  = $partial->process($context, $partials);
         return $result;
     }
@@ -48,16 +48,16 @@ final class MustacheNodePartial extends MustacheNode {
     }
 }
 
-class MustacheDocument extends MustacheNode {
+class Document extends Node {
     static function parse($template) {
-        $parser = new MustacheParser($template);
+        $parser = new Parser($template);
         return new self($parser->parseNodes());
     }
 
     private $nodes;
 
     /**
-     * @param MustacheNode[] $nodes
+     * @param Node[] $nodes
      */
     function __construct(array $nodes) {
         $this->nodes = $nodes;
@@ -67,7 +67,7 @@ class MustacheDocument extends MustacheNode {
         return $this->nodes;
     }
 
-    function process(MustacheContext $context, MustachePartials $partials) {
+    function process(Context $context, Partials $partials) {
         $result = '';
 
         foreach ($this->nodes as $node)
@@ -77,19 +77,19 @@ class MustacheDocument extends MustacheNode {
     }
 }
 
-class MustacheNodeText extends MustacheNode {
+class NodeText extends Node {
     private $text;
 
     function __construct($text) {
         $this->text = $text;
     }
 
-    function process(MustacheContext $context, MustachePartials $partials) {
+    function process(Context $context, Partials $partials) {
         return $this->text;
     }
 }
 
-class MustacheNodeSection extends MustacheDocument {
+class NodeSection extends Document {
     private $isInverted;
 
     function __construct(array $nodes, $name, $isInverted) {
@@ -98,12 +98,12 @@ class MustacheNodeSection extends MustacheDocument {
         $this->isInverted = $isInverted;
     }
 
-    function process(MustacheContext $context, MustachePartials $partials) {
+    function process(Context $context, Partials $partials) {
         $values = $context->resolveName($this->name)->toList();
 
         if ($this->isInverted) {
             if (!$values)
-                return parent::process($context->extend(new MustacheValueFalsey), $partials);
+                return parent::process($context->extend(new ValueFalse), $partials);
             else
                 return '';
         } else {

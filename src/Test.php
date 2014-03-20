@@ -6,7 +6,7 @@ use DirectoryIterator;
 use RegexIterator;
 use SplFileInfo;
 
-class MustacheTest extends \PHPUnit_Framework_TestCase {
+class Test extends \PHPUnit_Framework_TestCase {
     /**
      * @param $data
      * @param $template
@@ -15,9 +15,9 @@ class MustacheTest extends \PHPUnit_Framework_TestCase {
      * @dataProvider dataProvider
      */
     function testMustacheSpec($data, $template, $expected, $partials) {
-        $result = MustacheDocument::parse($template)->process(
-            MustacheContext::fromValue(MustacheValue::reflect($data)),
-            new MustachePartialsArray($partials)
+        $result = Document::parse($template)->process(
+            Context::fromValue(Value::reflect($data)),
+            new PartialsArray($partials)
         );
 
         $this->assertEquals($expected, $result);
