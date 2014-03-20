@@ -3,91 +3,25 @@
 namespace SimpleMustache;
 
 final class MustacheProcessor {
-    private $context, $partials;
+    private $context;
 
     static function process(MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials) {
-        $self = new self($document, $value, $partials);
-
-        $result = '';
-        foreach ($document->nodes() as $node)
-            $result .= $node->process($self);
-
-        return $result;
+        return $document->process(new self(array($value)), $partials);
     }
 
-    private function __construct(MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials) {
-        $this->partials = $partials;
-        $this->context  = array($value);
+    private function __construct(array $context) {
+        $this->context = $context;
     }
 
-    function visitText(MustacheNodeText $text) {
-        return $text->text();
+    function extend(MustacheValue $v) {
+        $context = $this->context;
+        array_unshift($context, $v);
+        return new self($context);
     }
 
-    function visitPartial(MustacheNodePartial $partial) {
-        $result = '';
-        $text   = $this->partials->partial($partial->name());
-        $text   = self::indentText($partial->indent(), $text);
-
-        foreach (MustacheParser::parse($text)->nodes() as $node)
-            $result .= $node->process($this);
-
-        return $result;
-    }
-
-    function visitVariableEscaped(MustacheNodeVariable $var) {
-        return htmlspecialchars($this->variableText($var), ENT_COMPAT);
-    }
-
-    function visitVariableUnEscaped(MustacheNodeVariable $var) {
-        return $this->variableText($var);
-    }
-
-    function visitSectionNormal(MustacheNodeSection $section) {
-        $result = '';
-        foreach ($this->sectionValues($section) as $value)
-            $result .= $this->renderSectionValue($value, $section);
-        return $result;
-    }
-
-    function visitSectionInverted(MustacheNodeSection $section) {
-        if (!$this->sectionValues($section))
-            return $this->renderSectionValue(new MustacheValueFalsey, $section);
-        else
-            return '';
-    }
-
-    private function sectionValues(MustacheNodeSection $section) {
-        return $this->resolveName($section->name())->toList();
-    }
-
-    private function renderSectionValue(MustacheValue $value, MustacheNodeSection $section) {
-        $this->pushContext($value);
-
-        $result = '';
-        foreach ($section->nodes() as $node)
-            $result .= $node->process($this);
-
-        $this->popContext();
-
-        return $result;
-    }
-
-    private function variableText(MustacheNodeVariable $var) {
-        return $this->resolveName($var->name())->text();
-    }
-
-    private function pushContext(MustacheValue $v) {
-        array_unshift($this->context, $v);
-    }
-
-    private function popContext() {
-        array_shift($this->context);
-    }
-
-    private function resolveName($name) {
+    function resolveName($name) {
         if ($name === '.')
-            return $this->currentContext();
+            return isset($this->context[0]) ? $this->context[0] : new MustacheValueFalsey;
 
         $parts = explode('.', $name);
         $v     = self::resolveProperty($this->context, array_shift($parts));
@@ -96,17 +30,6 @@ final class MustacheProcessor {
             $v = self::resolveProperty(array($v), $part);
 
         return $v;
-    }
-
-    private function currentContext() {
-        foreach ($this->context as $v)
-            return $v;
-
-        return new MustacheValueFalsey;
-    }
-
-    private static function indentText($indent, $text) {
-        return preg_replace("/(?<=^|\r\n|\n)(?!$)/su", addcslashes($indent, '\\$'), $text);
     }
 
     /**

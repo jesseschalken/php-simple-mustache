@@ -7,54 +7,99 @@ use Exception;
 
 final class MustacheParser {
     static function parse($template) {
-        return MustacheDocument::parse(MustacheTokenStream::parse(new self($template)));
+        $self = new self($template);
+        return new MustacheDocument($self->parseNodes());
     }
 
-    private $scanner, $openTag = '{{', $closeTag = '}}';
+    private $openTag = '{{', $closeTag = '}}';
 
     private function __construct($template) {
-        $this->scanner = new StringScanner($template);
+        $this->string = $template;
     }
 
-    function lineBoundaryRegex() {
-        return "\r\n|\n|^|$";
+    function parseNodes($openSection = null) {
+        $lineBoundary = "\r\n|\n|^|$";
+
+        $nodes = array();
+
+        while ($this->textMatches('.*' . $this->escape($this->openTag))) {
+            $nodes[] = new MustacheNodeText(
+                $this->scanText(".*?(?=\\s*{$this->escape($this->openTag)})(\\s*($lineBoundary))?")
+            );
+
+            $isStandalone = $this->textMatches("(?<=$lineBoundary)");
+            $spaceBefore  = $this->scanText("\\s*");
+            $this->scanText($this->escape($this->openTag));
+            $sigil = $this->scanText("(#|\\^|\\/|\\<|\\>|\\=|\\!|&|\\{)?");
+            $this->scanText("\\s*");
+
+            $closeSigil = $sigil === '{' ? '}' : $sigil;
+            $endRegex   = "\\s*({$this->escape($closeSigil)})?{$this->escape($this->closeTag)}";
+            if ($sigil == '!' || $sigil == '=')
+                $content = $this->scanText(".*?(?=$endRegex)");
+            else
+                $content = $this->scanText('(\w|[?!\/.-])*');
+
+            $this->scanText($endRegex);
+
+            if ($isStandalone &&
+                $sigil != '{' &&
+                $sigil != '&' &&
+                $sigil != '' &&
+                $this->textMatches("\\s*?($lineBoundary)")
+            ) {
+                $this->scanText("\\s*?($lineBoundary)");
+            } else {
+                $nodes[]     = new MustacheNodeText($spaceBefore);
+                $spaceBefore = '';
+            }
+
+            switch ($sigil) {
+                case '=':
+                    preg_match('/^(\\S+)\\s+(\\S+)$/su', $content, $match);
+                    $this->openTag  = $match[1];
+                    $this->closeTag = $match[2];
+                    break;
+                case '#':
+                    $nodes[] = new MustacheNodeSection(self::parseNodes($content), $content, false);
+                    break;
+                case '^':
+                    $nodes[] = new MustacheNodeSection(self::parseNodes($content), $content, true);
+                    break;
+                case '<':
+                case '>':
+                    $nodes[] = new MustacheNodePartial($content, $spaceBefore);
+                    break;
+                case '!':
+                    break;
+                case '&':
+                case '{':
+                    $nodes[] = new MustacheNodeVariable($content, false);
+                    break;
+                case '':
+                    $nodes[] = new MustacheNodeVariable($content, true);
+                    break;
+                case '/':
+                    if ($openSection === null)
+                        throw new Exception("Close of unopened section");
+                    else if ($content !== $openSection)
+                        throw new Exception("Open tag/close tag mismatch");
+                    else
+                        return $nodes;
+                default:
+                    throw new Exception("Unhandled sigil: $sigil");
+            }
+        }
+
+        if ($openSection !== null)
+            throw new Exception("Unclosed section");
+
+        $nodes[] = new MustacheNodeText($this->scanText('.*$'));
+
+        return $nodes;
     }
 
-    function openTagRegex() {
-        return $this->escape($this->openTag);
-    }
-
-    function closeTagRegex() {
-        return $this->escape($this->closeTag);
-    }
-
-    function setDelimiters($openTag, $closeTag) {
-        $this->openTag  = $openTag;
-        $this->closeTag = $closeTag;
-    }
-
-    function escape($text) {
-        return $this->scanner->escape($text);
-    }
-
-    function scanText($regex) {
-        return $this->scanner->scanText($regex);
-    }
-
-    function textMatches($regex) {
-        return $this->scanner->textMatches($regex);
-    }
-}
-
-final class StringScannerMatchFailureException extends Exception {
-}
-
-final class StringScanner {
     private $position = 0, $string;
-
-    function __construct($string) {
-        $this->string = $string;
-    }
 
     function escape($text) {
         return preg_quote($text, '/');
@@ -64,7 +109,9 @@ final class StringScanner {
         $position = $this->position;
         $string   = $this->string;
 
-        $match = $this->matchText($regex, function ($x) {
+        $match = $this->matchText(
+            $regex,
+            function ($x) {
                 return $x;
             },
             function () use ($regex, $position, $string) {
@@ -81,11 +128,15 @@ final class StringScanner {
     }
 
     function textMatches($regex) {
-        return $this->matchText($regex, function () {
-            return true;
-        }, function () {
-            return false;
-        });
+        return $this->matchText(
+            $regex,
+            function () {
+                return true;
+            },
+            function () {
+                return false;
+            }
+        );
     }
 
     private function matchText($regex, Closure $success, Closure $fail) {
@@ -98,5 +149,8 @@ final class StringScanner {
 
         return $position === $this->position ? $success($text) : $fail();
     }
+}
+
+final class StringScannerMatchFailureException extends Exception {
 }
 
