@@ -3,12 +3,16 @@
 namespace SimpleMustache;
 
 final class MustacheContext {
+    /** @var MustacheValue[] */
     private $context;
 
     static function process(MustacheDocument $document, MustacheValue $value, MustachePartials $partials) {
         return $document->process(new self(array($value)), $partials);
     }
 
+    /**
+     * @param MustacheValue[] $context
+     */
     private function __construct(array $context) {
         $this->context = $context;
     }
@@ -20,29 +24,36 @@ final class MustacheContext {
     }
 
     function resolveName($name) {
-        if ($name === '.')
-            return isset($this->context[0]) ? $this->context[0] : new MustacheValueFalsey;
+        if ($name === '.') {
+            if (isset($this->context[0]))
+                return $this->context[0];
+            else
+                return new MustacheValueFalsey;
+        }
 
         $parts = explode('.', $name);
-        $v     = self::resolveProperty($this->context, array_shift($parts));
+        $value = $this->resolveProperty(array_shift($parts));
 
-        foreach ($parts as $part)
-            $v = self::resolveProperty(array($v), $part);
+        foreach ($parts as $part) {
+            $context = new self(array($value));
+            $value   = $context->resolveProperty($part);
+        }
 
-        return $v;
+        return $value;
     }
 
     /**
-     * @param MustacheValue[] $context
      * @param string $name
      * @return MustacheValue
      */
-    private static function resolveProperty(array $context, $name) {
-        foreach ($context as $value)
+    private function resolveProperty($name) {
+        foreach ($this->context as $value)
             if ($value->hasProperty($name))
                 return $value->getProperty($name);
-        
+
         return new MustacheValueFalsey;
     }
 }
+
+
 
