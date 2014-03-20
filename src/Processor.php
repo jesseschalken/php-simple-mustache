@@ -35,17 +35,14 @@ final class MustacheContext {
     /**
      * @param MustacheValue[] $context
      * @param string $name
-     *
      * @return MustacheValue
      */
     private static function resolveProperty(array $context, $name) {
-        $i = 0;
-
-        $getter = function () use ($context, &$getter, $name, &$i) {
-            return isset($context[$i]) ? $context[$i++]->property($name, $getter) : new MustacheValueFalsey;
-        };
-
-        return $getter();
+        foreach ($context as $value)
+            if ($value->hasProperty($name))
+                return $value->getProperty($name);
+        
+        return new MustacheValueFalsey;
     }
 }
 

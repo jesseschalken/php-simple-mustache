@@ -2,7 +2,6 @@
 
 namespace SimpleMustache;
 
-use Closure;
 use Exception;
 
 abstract class MustacheValue {
@@ -23,41 +22,42 @@ abstract class MustacheValue {
             return new MustacheValueText((string)$v);
 
         if (is_array($v))
-            return self::reflectArray($v);
+            return self::isAssoc($v) ? new MustacheValueObject($v) : new MustacheValueList($v);
 
         if (is_object($v))
-            return self::reflectArray(get_object_vars($v));
+            return new MustacheValueObject(get_object_vars($v));
 
         throw new Exception("Unhandled type: " . gettype($v));
     }
 
-    private static function reflectArray(array $array) {
-        foreach ($array as &$v)
-            $v = self::reflect($v);
-
-        return self::isAssociative($array) ? new MustacheValueObject($array) : new MustacheValueList($array);
+    private static function isAssoc(array $array) {
+        $i = 0;
+        foreach ($array as $k => $v)
+            if ($k !== $i++)
+                return true;
+        return false;
     }
 
-    private static function isAssociative(array $array) {
-        $keys = array_keys($array);
-
-        return $keys !== array_keys($keys);
+    function hasProperty($name) {
+        return false;
     }
 
     /**
-     * @param          $name
-     * @param callable $else
-     *
+     * @param $name
      * @return MustacheValue
+     * @throws \Exception
      */
-    function property($name, Closure $else) {
-        return $else();
+    function getProperty($name) {
+        throw new Exception("No such property: $name");
     }
 
     function text() {
         return '';
     }
 
+    /**
+     * @return MustacheValue[]
+     */
     function toList() {
         return array();
     }
@@ -92,7 +92,10 @@ final class MustacheValueList extends MustacheValue {
     }
 
     function toList() {
-        return $this->array;
+        $result = array();
+        foreach ($this->array as $x)
+            $result[] = MustacheValue::reflect($x);
+        return $result;
     }
 }
 
@@ -103,8 +106,12 @@ final class MustacheValueObject extends MustacheValue {
         $this->object = $object;
     }
 
-    function property($name, Closure $else) {
-        return isset($this->object[$name]) ? $this->object[$name] : $else();
+    function hasProperty($name) {
+        return array_key_exists($name, $this->object);
+    }
+
+    function getProperty($name) {
+        return MustacheValue::reflect($this->object[$name]);
     }
 
     function toList() {
