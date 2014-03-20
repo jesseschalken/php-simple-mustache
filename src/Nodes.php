@@ -3,7 +3,7 @@
 namespace SimpleMustache;
 
 abstract class MustacheNode {
-    abstract function process(MustacheContext $visitor, MustachePartials $partials);
+    abstract function process(MustacheContext $context, MustachePartials $partials);
 }
 
 class MustacheNodeVariable extends MustacheNode {
@@ -19,8 +19,8 @@ class MustacheNodeVariable extends MustacheNode {
         return $this->name;
     }
 
-    function process(MustacheContext $visitor, MustachePartials $partials) {
-        $result = $visitor->resolveName($this->name)->text();
+    function process(MustacheContext $context, MustachePartials $partials) {
+        $result = $context->resolveName($this->name)->text();
 
         return $this->isEscaped ? htmlspecialchars($result, ENT_COMPAT) : $result;
     }
@@ -35,11 +35,11 @@ final class MustacheNodePartial extends MustacheNode {
         $this->indent  = $indent;
     }
 
-    function process(MustacheContext $visitor, MustachePartials $partials) {
+    function process(MustacheContext $context, MustachePartials $partials) {
         $partial = $partials->partial($this->content);
         $partial = $this->indentText($partial);
         $partial = MustacheParser::parse($partial);
-        $result  = $partial->process($visitor, $partials);
+        $result  = $partial->process($context, $partials);
         return $result;
     }
 
@@ -62,11 +62,11 @@ class MustacheDocument extends MustacheNode {
         return $this->nodes;
     }
 
-    function process(MustacheContext $visitor, MustachePartials $partials) {
+    function process(MustacheContext $context, MustachePartials $partials) {
         $result = '';
 
         foreach ($this->nodes as $node)
-            $result .= $node->process($visitor, $partials);
+            $result .= $node->process($context, $partials);
 
         return $result;
     }
@@ -79,7 +79,7 @@ class MustacheNodeText extends MustacheNode {
         $this->text = $text;
     }
 
-    function process(MustacheContext $visitor, MustachePartials $partials) {
+    function process(MustacheContext $context, MustachePartials $partials) {
         return $this->text;
     }
 }
@@ -93,18 +93,18 @@ class MustacheNodeSection extends MustacheDocument {
         $this->isInverted = $isInverted;
     }
 
-    function process(MustacheContext $visitor, MustachePartials $partials) {
-        $values = $visitor->resolveName($this->name)->toList();
+    function process(MustacheContext $context, MustachePartials $partials) {
+        $values = $context->resolveName($this->name)->toList();
 
         if ($this->isInverted) {
             if (!$values)
-                return parent::process($visitor->extend(new MustacheValueFalsey), $partials);
+                return parent::process($context->extend(new MustacheValueFalsey), $partials);
             else
                 return '';
         } else {
             $result = '';
             foreach ($values as $value)
-                $result .= parent::process($visitor->extend($value), $partials);
+                $result .= parent::process($context->extend($value), $partials);
             return $result;
         }
     }
