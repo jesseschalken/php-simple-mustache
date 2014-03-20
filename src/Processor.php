@@ -2,41 +2,27 @@
 
 namespace SimpleMustache;
 
-final class MustacheContext {
-    /** @var MustacheValue[] */
-    private $context;
-
+abstract class MustacheContext {
     static function process(MustacheDocument $document, MustacheValue $value, MustachePartials $partials) {
-        return $document->process(new self(array($value)), $partials);
-    }
+        $context = new MustacheBaseContext;
 
-    /**
-     * @param MustacheValue[] $context
-     */
-    private function __construct(array $context) {
-        $this->context = $context;
+        return $document->process($context->extend($value), $partials);
     }
 
     function extend(MustacheValue $v) {
-        $context = $this->context;
-        array_unshift($context, $v);
-        return new self($context);
+        return new MustacheExtendedContext($this, $v);
     }
 
     function resolveName($name) {
-        if ($name === '.') {
-            if (isset($this->context[0]))
-                return $this->context[0];
-            else
-                return new MustacheValueFalsey;
-        }
+        if ($name === '.')
+            return $this->currentValue();
 
         $parts = explode('.', $name);
         $value = $this->resolveProperty(array_shift($parts));
 
         foreach ($parts as $part) {
-            $context = new self(array($value));
-            $value   = $context->resolveProperty($part);
+            $context = new MustacheBaseContext;
+            $value   = $context->extend($value)->resolveProperty($part);
         }
 
         return $value;
@@ -46,14 +32,43 @@ final class MustacheContext {
      * @param string $name
      * @return MustacheValue
      */
-    private function resolveProperty($name) {
-        foreach ($this->context as $value)
-            if ($value->hasProperty($name))
-                return $value->getProperty($name);
+    abstract function resolveProperty($name);
 
+    /**
+     * @return MustacheValue
+     */
+    abstract function currentValue();
+}
+
+class MustacheBaseContext extends MustacheContext {
+    function resolveProperty($name) {
+        return new MustacheValueFalsey;
+    }
+
+    function currentValue() {
         return new MustacheValueFalsey;
     }
 }
 
+class MustacheExtendedContext extends MustacheContext {
+    private $context;
+    private $value;
+
+    function __construct(MustacheContext $context, MustacheValue $value) {
+        $this->context = $context;
+        $this->value   = $value;
+    }
+
+    function resolveProperty($name) {
+        if ($this->value->hasProperty($name))
+            return $this->value->getProperty($name);
+        else
+            return $this->context->resolveProperty($name);
+    }
+
+    function currentValue() {
+        return $this->value;
+    }
+}
 
 

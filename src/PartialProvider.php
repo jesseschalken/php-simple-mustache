@@ -3,6 +3,10 @@
 namespace SimpleMustache;
 
 abstract class MustachePartials {
+    /**
+     * @param string $name
+     * @return string
+     */
     function partial($name) {
         return '';
     }
