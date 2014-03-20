@@ -2,15 +2,18 @@
 
 namespace SimpleMustache;
 
-abstract class MustachePartialProvider {
+abstract class MustachePartials {
     function partial($name) {
         return '';
     }
 }
 
-final class MustachePartialProviderArray extends MustachePartialProvider {
-    private $partials = array();
+final class MustachePartialsArray extends MustachePartials {
+    private $partials;
 
+    /**
+     * @param string[] $partials
+     */
     function __construct(array $partials) {
         $this->partials = $partials;
     }

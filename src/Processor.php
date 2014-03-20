@@ -2,10 +2,10 @@
 
 namespace SimpleMustache;
 
-final class MustacheProcessor {
+final class MustacheContext {
     private $context;
 
-    static function process(MustacheDocument $document, MustacheValue $value, MustachePartialProvider $partials) {
+    static function process(MustacheDocument $document, MustacheValue $value, MustachePartials $partials) {
         return $document->process(new self(array($value)), $partials);
     }
 

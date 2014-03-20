@@ -3,7 +3,7 @@
 namespace SimpleMustache;
 
 abstract class MustacheNode {
-    abstract function process(MustacheProcessor $visitor, MustachePartialProvider $partials);
+    abstract function process(MustacheContext $visitor, MustachePartials $partials);
 }
 
 class MustacheNodeVariable extends MustacheNode {
@@ -19,7 +19,7 @@ class MustacheNodeVariable extends MustacheNode {
         return $this->name;
     }
 
-    function process(MustacheProcessor $visitor, MustachePartialProvider $partials) {
+    function process(MustacheContext $visitor, MustachePartials $partials) {
         $result = $visitor->resolveName($this->name)->text();
 
         return $this->isEscaped ? htmlspecialchars($result, ENT_COMPAT) : $result;
@@ -35,7 +35,7 @@ final class MustacheNodePartial extends MustacheNode {
         $this->indent  = $indent;
     }
 
-    function process(MustacheProcessor $visitor, MustachePartialProvider $partials) {
+    function process(MustacheContext $visitor, MustachePartials $partials) {
         $partial = $partials->partial($this->content);
         $partial = $this->indentText($partial);
         $partial = MustacheParser::parse($partial);
@@ -62,7 +62,7 @@ class MustacheDocument extends MustacheNode {
         return $this->nodes;
     }
 
-    function process(MustacheProcessor $visitor, MustachePartialProvider $partials) {
+    function process(MustacheContext $visitor, MustachePartials $partials) {
         $result = '';
 
         foreach ($this->nodes as $node)
@@ -79,7 +79,7 @@ class MustacheNodeText extends MustacheNode {
         $this->text = $text;
     }
 
-    function process(MustacheProcessor $visitor, MustachePartialProvider $partials) {
+    function process(MustacheContext $visitor, MustachePartials $partials) {
         return $this->text;
     }
 }
@@ -93,7 +93,7 @@ class MustacheNodeSection extends MustacheDocument {
         $this->isInverted = $isInverted;
     }
 
-    function process(MustacheProcessor $visitor, MustachePartialProvider $partials) {
+    function process(MustacheContext $visitor, MustachePartials $partials) {
         $values = $visitor->resolveName($this->name)->toList();
 
         if ($this->isInverted) {

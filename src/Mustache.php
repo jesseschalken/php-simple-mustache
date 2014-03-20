@@ -6,9 +6,9 @@ final class Mustache {
     static function run($template, $data, array $partials) {
         $document = MustacheParser::parse($template);
         $value    = MustacheValue::reflect($data);
-        $partials = new MustachePartialProviderArray($partials);
+        $partials = new MustachePartialsArray($partials);
 
-        return MustacheProcessor::process($document, $value, $partials);
+        return MustacheContext::process($document, $value, $partials);
     }
 }
 
