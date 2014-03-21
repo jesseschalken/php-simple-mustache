@@ -22,7 +22,7 @@ class NodeVariable extends Node {
     function process(Context $context, Partials $partials) {
         $result = $context->resolveName($this->name)->text();
 
-        return $this->isEscaped ? htmlspecialchars($result, ENT_COMPAT) : $result;
+        return $this->isEscaped ? htmlspecialchars($result, ENT_COMPAT, 'UTF-8') : $result;
     }
 }
 
@@ -44,7 +44,11 @@ final class NodePartial extends Node {
     }
 
     private function indentText($text) {
-        return preg_replace("/(?<=^|\r\n|\n)(?!$)/su", addcslashes($this->indent, '\\$'), $text);
+        $lines = explode("\n", $text);
+        foreach ($lines as $k => &$line)
+            if (!($k == count($lines) - 1 && $line === ''))
+                $line = "$this->indent$line";
+        return join("\n", $lines);
     }
 }
 

@@ -2,8 +2,6 @@
 
 namespace SimpleMustache;
 
-use Exception;
-
 abstract class Value {
     static function reflect($v) {
         if (is_null($v))

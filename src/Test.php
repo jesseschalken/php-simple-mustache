@@ -8,19 +8,26 @@ use SplFileInfo;
 
 class Test extends \PHPUnit_Framework_TestCase {
     /**
-     * @param $data
-     * @param $template
-     * @param $expected
-     * @param $partials
+     * @param array $json
+     * @throws \Exception
      * @dataProvider dataProvider
      */
-    function testMustacheSpec($data, $template, $expected, $partials) {
-        $result = Document::parse($template)->process(
+    function testMustacheSpec($json) {
+        $template = $json['template'];
+        $data     = $json['data'];
+        $partials = isset($json['partials']) ? $json['partials'] : array();
+        $expected = $json['expected'];
+        $result   = Document::parse($template)->process(
             Context::fromValue(Value::reflect($data)),
             new PartialsArray($partials)
         );
 
-        $this->assertEquals($expected, $result);
+        try {
+            $this->assertEquals($expected, $result);
+        } catch (\Exception $e) {
+            print json_encode($json, JSON_PRETTY_PRINT);
+            throw $e;
+        }
     }
 
     function dataProvider() {
@@ -29,18 +36,10 @@ class Test extends \PHPUnit_Framework_TestCase {
         /** @var SplFileInfo $file */
         $files = new RegexIterator(new DirectoryIterator(__DIR__ . "/../spec/specs"), '/^[^~].*\.json$/');
         foreach ($files as $file) {
-            $fname = $file->getFilename();
             $json1 = json_decode(file_get_contents($file->getPathname()), true);
 
-            foreach ($json1['tests'] as $json) {
-                $name     = $json['name'];
-                $data     = $json['data'];
-                $template = $json['template'];
-                $expected = $json['expected'];
-                $partials = isset($json['partials']) ? $json['partials'] : array();
-
-                $result["$fname - $name"] = array($data, $template, $expected, $partials);
-            }
+            foreach ($json1['tests'] as $json)
+                $result["{$file->getFilename()} - {$json['name']}"] = array($json);
         }
 
         return $result;

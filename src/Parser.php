@@ -2,7 +2,6 @@
 
 namespace SimpleMustache;
 
-use Closure;
 use Exception;
 
 final class Parser {
@@ -51,9 +50,11 @@ final class Parser {
 
             switch ($sigil) {
                 case '=':
-                    preg_match('/^(\\S+)\\s+(\\S+)$/su', $content, $match);
-                    $this->openTag  = $match[1];
-                    $this->closeTag = $match[2];
+                    $regex = new Regex('^(\\S+)\\s+(\\S+)$', 'su');
+                    $match = $regex->match($content);
+
+                    $this->openTag  = $match[0]->text(1);
+                    $this->closeTag = $match[0]->text(2);
                     break;
                 case '#':
                     $nodes[] = new NodeSection(self::parseNodes($content), $content, false);
@@ -97,52 +98,32 @@ final class Parser {
     private $position = 0, $string;
 
     function escape($text) {
-        return preg_quote($text, '/');
+        return preg_quote($text);
     }
 
     function scanText($regex) {
-        $position = $this->position;
-        $string   = $this->string;
+        $match = $this->matchText($regex);
 
-        $match = $this->matchText(
-            $regex,
-            function ($x) {
-                return $x;
-            },
-            function () use ($regex, $position, $string) {
-                throw new StringScannerMatchFailureException(
-                    "Regex $regex failed to match at offset $position in string " . json_encode($string));
-            }
-        );
+        if ($match === null)
+            throw new StringScannerMatchFailureException("$regex failed to match");
 
         $this->position += strlen($match);
-
-        assert($this->position <= strlen($this->string));
 
         return $match;
     }
 
     function textMatches($regex) {
-        return $this->matchText(
-            $regex,
-            function () {
-                return true;
-            },
-            function () {
-                return false;
-            }
-        );
+        return $this->matchText($regex) !== null;
     }
 
-    private function matchText($regex, Closure $success, Closure $fail) {
-        preg_match("/$regex/su", $this->string, $matches, PREG_OFFSET_CAPTURE, $this->position);
+    private function matchText($regex) {
+        $regex   = new Regex($regex, 'su');
+        $matches = $regex->match($this->string, $this->position);
 
-        if (!isset($matches[0]))
-            return $fail();
+        if (!isset($matches[0]) || $matches[0]->offset() !== $this->position)
+            return null;
 
-        list($text, $position) = $matches[0];
-
-        return $position === $this->position ? $success($text) : $fail();
+        return $matches[0]->text();
     }
 }
 
