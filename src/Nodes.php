@@ -55,7 +55,7 @@ final class NodePartial extends Node {
 class Document extends Node {
     static function parse($template) {
         $parser = new Parser($template);
-        return new self($parser->parseNodes());
+        return new self($parser->parse());
     }
 
     private $nodes;

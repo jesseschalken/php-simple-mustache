@@ -2,50 +2,66 @@
 
 namespace SimpleMustache;
 
-use Exception;
-
 final class Parser {
     private $openTag = '{{', $closeTag = '}}';
+    private $string;
+    private $lineStart = true;
 
     function __construct($template) {
         $this->string = $template;
     }
 
-    function parseNodes($openSection = null) {
-        $lineBoundary = "\r\n|\n|^|$";
-
+    function parse($openSection = null) {
         $nodes = array();
 
-        while ($this->textMatches('.*' . $this->escape($this->openTag))) {
-            $nodes[] = new NodeText(
-                $this->scanText(".*?(?=\\s*{$this->escape($this->openTag)})(\\s*($lineBoundary))?")
-            );
+        while (true) {
+            $openTagRE  = preg_quote($this->openTag);
+            $closeTagRE = preg_quote($this->closeTag);
 
-            $isStandalone = $this->textMatches("(?<=$lineBoundary)");
-            $spaceBefore  = $this->scanText("\\s*");
-            $this->scanText($this->escape($this->openTag));
-            $sigil = $this->scanText("(#|\\^|\\/|\\<|\\>|\\=|\\!|&|\\{)?");
-            $this->scanText("\\s*");
+            $match = $this->regex("((?<=\n|^)[ \t]*)?$openTagRE(#|\\^|\\/|\\<|\\>|\\=|\\!|&|\\{|)\\s*");
+            if (!$match)
+                break;
 
-            $closeSigil = $sigil === '{' ? '}' : $sigil;
-            $endRegex   = "\\s*({$this->escape($closeSigil)})?{$this->escape($this->closeTag)}";
-            if ($sigil == '!' || $sigil == '=')
-                $content = $this->scanText(".*?(?=$endRegex)");
-            else
-                $content = $this->scanText('(\w|[?!\/.-])*');
+            $nodes[] = new NodeText($this->remove($match->offset()));
+            $this->skip($match->length());
 
-            $this->scanText($endRegex);
+            $isStandalone = $match->has(1) && ($this->lineStart || $match->offset(1) > 0);
+            $spaceBefore  = $match->has(1) ? $match->text(1) : '';
+            $sigil        = $match->text(2);
+            $closeSigilRE = preg_quote($sigil === '{' ? '}' : $sigil);
+            $endRegex     = "\\s*($closeSigilRE|)$closeTagRE";
 
-            if ($isStandalone &&
-                $sigil != '{' &&
-                $sigil != '&' &&
-                $sigil != '' &&
-                $this->textMatches("\\s*?($lineBoundary)")
-            ) {
-                $this->scanText("\\s*?($lineBoundary)");
+            if ($sigil == '!' || $sigil == '=') {
+                $match   = $this->regex($endRegex);
+                $content = $this->remove($match->offset());
+                $this->skip($match->length());
             } else {
-                $nodes[]     = new NodeText($spaceBefore);
-                $spaceBefore = '';
+                $match   = $this->regex("^([\\w?!\\/.-]*)$endRegex", 'su');
+                $content = $match->text(1);
+                $this->skip($match->offset());
+                $this->skip($match->length());
+            }
+
+            $isStandalone = $isStandalone &&
+                            $sigil != '{' &&
+                            $sigil != '&' &&
+                            $sigil != '';
+
+            if ($isStandalone) {
+                $match = $this->regex("^[ \t]*(\r?\n|$)");
+                if (!$match) {
+                    $isStandalone = false;
+                } else {
+                    $this->skip($match->offset());
+                    $this->skip($match->length());
+                    $this->lineStart = true;
+                }
+            }
+
+            if (!$isStandalone) {
+                $this->lineStart = false;
+                $nodes[]         = new NodeText($spaceBefore);
+                $spaceBefore     = '';
             }
 
             switch ($sigil) {
@@ -53,14 +69,14 @@ final class Parser {
                     $regex = new Regex('^(\\S+)\\s+(\\S+)$', 'su');
                     $match = $regex->match($content);
 
-                    $this->openTag  = $match[0]->text(1);
-                    $this->closeTag = $match[0]->text(2);
+                    $this->openTag  = $match->text(1);
+                    $this->closeTag = $match->text(2);
                     break;
                 case '#':
-                    $nodes[] = new NodeSection(self::parseNodes($content), $content, false);
+                    $nodes[] = new NodeSection($this->parse($content), $content, false);
                     break;
                 case '^':
-                    $nodes[] = new NodeSection(self::parseNodes($content), $content, true);
+                    $nodes[] = new NodeSection($this->parse($content), $content, true);
                     break;
                 case '<':
                 case '>':
@@ -90,43 +106,34 @@ final class Parser {
         if ($openSection !== null)
             throw new Exception("Unclosed section");
 
-        $nodes[] = new NodeText($this->scanText('.*$'));
+        $nodes[] = new NodeText($this->removeAll());
 
         return $nodes;
     }
 
-    private $position = 0, $string;
-
-    function escape($text) {
-        return preg_quote($text);
+    private function regex($pattern) {
+        $regex = new Regex($pattern, 'su');
+        return $regex->match($this->string);
     }
 
-    function scanText($regex) {
-        $match = $this->matchText($regex);
-
-        if ($match === null)
-            throw new StringScannerMatchFailureException("$regex failed to match");
-
-        $this->position += strlen($match);
-
-        return $match;
+    private function remove($len) {
+        $result = $this->read($len);
+        $this->skip($len);
+        return $result;
     }
 
-    function textMatches($regex) {
-        return $this->matchText($regex) !== null;
+    private function skip($len) {
+        $this->string = substr($this->string, $len);
     }
 
-    private function matchText($regex) {
-        $regex   = new Regex($regex, 'su');
-        $matches = $regex->match($this->string, $this->position);
-
-        if (!isset($matches[0]) || $matches[0]->offset() !== $this->position)
-            return null;
-
-        return $matches[0]->text();
+    private function read($len) {
+        return substr($this->string, 0, $len);
     }
-}
 
-final class StringScannerMatchFailureException extends Exception {
+    private function removeAll() {
+        $result       = $this->string;
+        $this->string = '';
+        return $result;
+    }
 }
 

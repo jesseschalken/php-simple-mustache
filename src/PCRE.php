@@ -18,14 +18,14 @@ class Regex {
     /**
      * @param string $subject
      * @param int $offset
-     * @return Match[]
+     * @return Match|null
      */
     function match($subject, $offset = 0) {
         $count = preg_match($this->pregPattern(), $subject, $match, PREG_OFFSET_CAPTURE, $offset);
 
         self::checkLastError();
 
-        return $count ? array(new Match($match)) : array();
+        return $count ? new Match($match) : null;
     }
 
     private function pregPattern() {
@@ -115,12 +115,16 @@ class Match {
         return $this->match[$subPattern][1];
     }
 
-    function __toString() {
-        return $this->text();
-    }
-
     function text($subPattern = 0) {
         return $this->match[$subPattern][0];
+    }
+
+    function has($subPattern = 0) {
+        return isset($this->match[$subPattern]) && $this->offset($subPattern) != -1;
+    }
+
+    function length($subPattern = 0) {
+        return strlen($this->text($subPattern));
     }
 }
 

@@ -43,7 +43,7 @@ abstract class Value {
     /**
      * @param $name
      * @return Value
-     * @throws \Exception
+     * @throws Exception
      */
     function getProperty($name) {
         throw new Exception("No such property: $name");
