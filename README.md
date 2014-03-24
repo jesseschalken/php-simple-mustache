@@ -9,12 +9,12 @@ use SimpleMustache\Document;
 use SimpleMustache\Value;
 use SimpleMustache\PartialsArray;
 
-$document = Document::parse('hello {{where}}');
-$value    = Value::reflect(array('where' => 'there'));
+$document = Document::parse('hello {{user.name}}');
+$value    = Value::reflect(array('user' => array('name' => 'Joe')));
 $partials = new SimpleMustache\PartialsArray;
 
 print $document->process($value, $partials);
-// => "hello there"
+// => "hello Joe"
 ```
 
 You can use `Value::reflect()` to create a `Value` from an arbitrary PHP value, or simply extend the `Value` class and override its methods:
