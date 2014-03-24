@@ -31,7 +31,7 @@ Value   Value::getProperty(string $name);
 You can use `new PartialsArray(...)` to create a `Partials` from an array, or simply extend the `Partials` class and override its method:
 
 ```
-string  Partials::partial(string $name);
+string  Partials::get(string $name);
 ```
 
 That is all.
