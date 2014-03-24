@@ -24,8 +24,8 @@ final class Parser {
         $nodes = array();
 
         while (true) {
-            $openTagRE  = preg_quote($this->openTag);
-            $closeTagRE = preg_quote($this->closeTag);
+            $openTagRE  = Regex::quote($this->openTag);
+            $closeTagRE = Regex::quote($this->closeTag);
 
             $match = $this->regex("((?<=\n|^)[ \t]*)?$openTagRE(#|\\^|\\/|\\<|\\>|\\=|\\!|&|\\{|)\\s*");
             if (!$match)
@@ -37,7 +37,7 @@ final class Parser {
             $isStandalone = $match->has(1) && ($this->lineStart || $match->offset(1) > 0);
             $spaceBefore  = $match->has(1) ? $match->text(1) : '';
             $sigil        = $match->text(2);
-            $closeSigilRE = preg_quote($sigil === '{' ? '}' : $sigil);
+            $closeSigilRE = Regex::quote($sigil === '{' ? '}' : $sigil);
             $endRegex     = "\\s*($closeSigilRE|)$closeTagRE";
 
             if ($sigil == '!' || $sigil == '=') {

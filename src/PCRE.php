@@ -3,6 +3,10 @@
 namespace SimpleMustache;
 
 class Regex {
+    static function quote($string) {
+        return preg_quote($string);
+    }
+
     private $pattern;
     private $options;
 
