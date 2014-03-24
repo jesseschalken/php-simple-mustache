@@ -19,7 +19,7 @@ print $document->process($value, $partials);
 
 Use `Document::process()` to parse a Mustache template. Then call `->process($value, $partials)` to process it, with an instance of `Value` and `Partials`.
 
-You can use `Value::reflect()` to create a `Value` from an arbitrary PHP value, or simply extend the `Value` class and override its methods:
+You can use `Value::reflect($value)` to create a `Value` from an arbitrary PHP value, or simply extend the `Value` class and override its methods:
 
 ```
 Value[] Value::toList();
@@ -28,7 +28,7 @@ bool    Value::hasProperty(string $name);
 Value   Value::getProperty(string $name);
 ```
 
-You can use `new PartialsArray(...)` to create a `Partials` from an array, or simply extend the `Partials` class and override its method:
+You can use `new PartialsArray($array)` to create a `Partials` from an array, or simply extend the `Partials` class and override its method:
 
 ```
 string  Partials::get(string $name);
