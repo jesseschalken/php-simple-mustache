@@ -1,4 +1,4 @@
-## simple-mustache-parser
+## simple-mustache
 
 A simple [Mustache](http://mustache.github.com/) parser and processor for PHP.
 
