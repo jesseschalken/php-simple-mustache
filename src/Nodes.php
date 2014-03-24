@@ -3,16 +3,25 @@
 namespace SimpleMustache;
 
 abstract class Node {
+    /**
+     * @param Context $context
+     * @param Partials $partials
+     * @return string
+     */
     abstract function process(Context $context, Partials $partials);
 }
 
 class NodeVariable extends Node {
-    private $isEscaped;
+    private $escaped;
     private $name;
 
+    /**
+     * @param string $name
+     * @param bool $isEscaped
+     */
     function __construct($name, $isEscaped) {
-        $this->isEscaped = $isEscaped;
-        $this->name      = $name;
+        $this->escaped = $isEscaped;
+        $this->name    = $name;
     }
 
     function name() {
@@ -22,21 +31,25 @@ class NodeVariable extends Node {
     function process(Context $context, Partials $partials) {
         $result = $context->resolveName($this->name)->text();
 
-        return $this->isEscaped ? htmlspecialchars($result, ENT_COMPAT, 'UTF-8') : $result;
+        return $this->escaped ? htmlspecialchars($result, ENT_COMPAT, 'UTF-8') : $result;
     }
 }
 
 final class NodePartial extends Node {
-    private $content;
+    private $name;
     private $indent;
 
-    function __construct($content, $indent) {
-        $this->content = $content;
-        $this->indent  = $indent;
+    /**
+     * @param string $name
+     * @param string $indent
+     */
+    function __construct($name, $indent) {
+        $this->name   = $name;
+        $this->indent = $indent;
     }
 
     function process(Context $context, Partials $partials) {
-        $partial = $partials->get($this->content);
+        $partial = $partials->get($this->name);
         $partial = $this->indentText($partial);
         $partial = Document::parse($partial);
         $result  = $partial->process($context, $partials);
@@ -84,6 +97,9 @@ class Document extends Node {
 class NodeText extends Node {
     private $text;
 
+    /**
+     * @param string $text
+     */
     function __construct($text) {
         $this->text = $text;
     }
@@ -94,20 +110,26 @@ class NodeText extends Node {
 }
 
 class NodeSection extends Document {
-    private $isInverted;
+    private $name;
+    private $inverted;
 
-    function __construct(array $nodes, $name, $isInverted) {
+    /**
+     * @param array $nodes
+     * @param string $name
+     * @param bool $inverted
+     */
+    function __construct(array $nodes, $name, $inverted) {
         parent::__construct($nodes);
-        $this->name       = $name;
-        $this->isInverted = $isInverted;
+        $this->name     = $name;
+        $this->inverted = $inverted;
     }
 
     function process(Context $context, Partials $partials) {
         $values = $context->resolveName($this->name)->toList();
 
-        if ($this->isInverted) {
+        if ($this->inverted) {
             if (!$values)
-                return parent::process($context->extend(new ValueFalse), $partials);
+                return parent::process($context, $partials);
             else
                 return '';
         } else {

@@ -7,11 +7,20 @@ final class Parser {
     private $string;
     private $lineStart = true;
 
+    /**
+     * @param string $template
+     */
     function __construct($template) {
         $this->string = $template;
     }
 
+    /**
+     * @param string|null $openSection
+     * @return Node[]
+     * @throws Exception
+     */
     function parse($openSection = null) {
+        /** @var Node[] $nodes */
         $nodes = array();
 
         while (true) {
