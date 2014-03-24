@@ -102,9 +102,9 @@ final class Parser {
                     break;
                 case '/':
                     if ($openSection === null)
-                        throw new Exception("Close of unopened section");
+                        throw new Exception("Close tag '$content' found but no section is open");
                     else if ($content !== $openSection)
-                        throw new Exception("Open tag/close tag mismatch");
+                        throw new Exception("Close tag '$content' does not match current open section '$openSection'");
                     else
                         return $nodes;
                 default:
@@ -113,7 +113,7 @@ final class Parser {
         }
 
         if ($openSection !== null)
-            throw new Exception("Unclosed section");
+            throw new Exception("Unclosed section '$openSection'");
 
         $nodes[] = new NodeText($this->removeAll());
 
