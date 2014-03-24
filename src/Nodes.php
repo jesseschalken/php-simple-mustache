@@ -4,11 +4,11 @@ namespace SimpleMustache;
 
 abstract class Node {
     /**
-     * @param Context $context
+     * @param Value $context
      * @param Partials $partials
      * @return string
      */
-    abstract function process(Context $context, Partials $partials);
+    abstract function process(Value $context, Partials $partials);
 }
 
 class NodeVariable extends Node {
@@ -28,8 +28,8 @@ class NodeVariable extends Node {
         return $this->name;
     }
 
-    function process(Context $context, Partials $partials) {
-        $result = $context->resolveName($this->name)->text();
+    function process(Value $context, Partials $partials) {
+        $result = $context->resolveName($this->name)->toString();
 
         return $this->escaped ? htmlspecialchars($result, ENT_COMPAT, 'UTF-8') : $result;
     }
@@ -48,7 +48,7 @@ final class NodePartial extends Node {
         $this->indent = $indent;
     }
 
-    function process(Context $context, Partials $partials) {
+    function process(Value $context, Partials $partials) {
         $partial = $partials->get($this->name);
         $partial = $this->indentText($partial);
         $partial = Document::parse($partial);
@@ -84,7 +84,7 @@ class Document extends Node {
         return $this->nodes;
     }
 
-    function process(Context $context, Partials $partials) {
+    function process(Value $context, Partials $partials) {
         $result = '';
 
         foreach ($this->nodes as $node)
@@ -104,7 +104,7 @@ class NodeText extends Node {
         $this->text = $text;
     }
 
-    function process(Context $context, Partials $partials) {
+    function process(Value $context, Partials $partials) {
         return $this->text;
     }
 }
@@ -124,7 +124,7 @@ class NodeSection extends Document {
         $this->inverted = $inverted;
     }
 
-    function process(Context $context, Partials $partials) {
+    function process(Value $context, Partials $partials) {
         $values = $context->resolveName($this->name)->toList();
 
         if ($this->inverted) {

@@ -17,10 +17,11 @@ class Test extends \PHPUnit_Framework_TestCase {
         $data     = $json['data'];
         $partials = isset($json['partials']) ? $json['partials'] : array();
         $expected = $json['expected'];
-        $result   = Document::parse($template)->process(
-            Context::fromValue(Value::reflect($data)),
-            new PartialsArray($partials)
-        );
+
+        $partials = new PartialsArray($partials);
+        $value    = Value::reflect($data);
+        $document = Document::parse($template);
+        $result   = $document->process($value, $partials);
 
         try {
             $this->assertEquals($expected, $result);
