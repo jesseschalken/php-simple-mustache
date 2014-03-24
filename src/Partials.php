@@ -18,7 +18,7 @@ final class PartialsArray extends Partials {
     /**
      * @param string[] $partials
      */
-    function __construct(array $partials) {
+    function __construct(array $partials = array()) {
         $this->partials = $partials;
     }
 

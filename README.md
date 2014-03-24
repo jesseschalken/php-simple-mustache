@@ -1,12 +1,18 @@
 # simple-mustache-parser
 
-A simple [Mustache](http://mustache.github.com/) parser written in PHP.
+A simple [Mustache](http://mustache.github.com/) parser and processor for PHP.
 
-Run tests with `./runtests.php`.
+## Usage
 
-Parse a document with `MustacheDocument::parse`. Process a document against a MustacheValue with `MustacheProcessor::process`.
+```php
+use SimpleMustache\Document;
+use SimpleMustache\Value;
+use SimpleMustache\PartialsArray;
 
-See `Mustache`
+$document = Document::parse('hello {{where}}');
+$value    = Value::reflect(array('where' => 'there'));
+$partials = new SimpleMustache\PartialsArray;
 
-Parse a Mustache file and dump the syntax tree with `./parsestdin.php < my_template.mustache`.
-
+print $document->process($value, $partials);
+// => "hello there"
+```
