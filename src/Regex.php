@@ -33,18 +33,9 @@ class Regex {
     }
 
     private function pregPattern() {
-        $regex  = $this->pattern;
-        $regex2 = '';
-        $len    = strlen($regex);
-        for ($i = 0; $i < $len; $i++) {
-            if ($regex[$i] === '\\')
-                $regex2 .= $regex[$i++];
-            else if ($regex[$i] === '#')
-                $regex2 .= '\\';
-            $regex2 .= $regex[$i];
-        }
-
-        return "#$regex2#$this->options";
+        $result = preg_replace('#(?<!\\\\)((\\\\\\\\)*):#S', '$1\\\\:', $this->pattern);
+        self::checkLastError();
+        return ":$result:$this->options";
     }
 
     private static function checkLastError() {
