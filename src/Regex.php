@@ -35,16 +35,16 @@ class Regex {
     private function pregPattern() {
         $regex  = $this->pattern;
         $regex2 = '';
-        $start  = 0;
-        do {
-            $end = strpos($regex, '\\', $start);
-            $end = $end === false ? strlen($regex) : $end;
-            $regex2 .= str_replace(':', "\\:", substr($regex, $start, $end - $start));
-            $regex2 .= substr($regex, $end, 2);
-            $start = $end + 2;
-        } while ($end < strlen($regex));
+        $len    = strlen($regex);
+        for ($i = 0; $i < $len; $i++) {
+            if ($regex[$i] === '\\')
+                $regex2 .= $regex[$i++];
+            else if ($regex[$i] === '#')
+                $regex2 .= '\\';
+            $regex2 .= $regex[$i];
+        }
 
-        return ":$regex2:$this->options";
+        return "#$regex2#$this->options";
     }
 
     private static function checkLastError() {
