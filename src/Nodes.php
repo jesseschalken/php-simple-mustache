@@ -129,7 +129,7 @@ class NodeSection extends Document {
         } else {
             $result = '';
             foreach ($values as $value)
-                $result .= parent::process($context->extend($value), $partials);
+                $result .= parent::process(new ExtendedValue($value, $context), $partials);
             return $result;
         }
     }

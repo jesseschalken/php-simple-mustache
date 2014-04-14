@@ -36,10 +36,6 @@ class Value {
         return false;
     }
 
-    final function extend(Value $value) {
-        return new ExtendedValue($value, $this);
-    }
-
     final function resolveName($name) {
         if ($name === '.')
             return $this;
@@ -75,7 +71,7 @@ class Value {
 
 final class TrueValue extends Value {
     function toList() {
-        return array($this);
+        return array(new Value);
     }
 }
 
