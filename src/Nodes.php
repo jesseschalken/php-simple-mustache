@@ -52,8 +52,7 @@ final class NodePartial extends Node {
         $partial = $partials->get($this->name);
         $partial = $this->indentText($partial);
         $partial = Document::parse($partial);
-        $result  = $partial->process($context, $partials);
-        return $result;
+        return $partial->process($context, $partials);
     }
 
     private function indentText($text) {
@@ -86,10 +85,8 @@ class Document extends Node {
 
     function process(Value $context, Partials $partials) {
         $result = '';
-
         foreach ($this->nodes as $node)
             $result .= $node->process($context, $partials);
-
         return $result;
     }
 }
@@ -128,10 +125,7 @@ class NodeSection extends Document {
         $values = $context->resolveName($this->name)->toList();
 
         if ($this->inverted) {
-            if (!$values)
-                return parent::process($context, $partials);
-            else
-                return '';
+            return $values ? '' : parent::process($context, $partials);
         } else {
             $result = '';
             foreach ($values as $value)

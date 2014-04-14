@@ -3,6 +3,10 @@
 namespace SimpleMustache;
 
 class Regex {
+    static function create($pattern, $options = '') {
+        return new self($pattern, $options);
+    }
+
     static function quote($string) {
         return preg_quote($string);
     }
@@ -99,27 +103,52 @@ class Regex {
     }
 }
 
-class Match {
+class Piece {
+    private $piece;
+
+    function __construct(array $piece) {
+        $this->piece = $piece;
+    }
+
+    function offset() {
+        return $this->piece[1];
+    }
+
+    function text() {
+        return $this->piece[0];
+    }
+
+    function length() {
+        return strlen($this->text());
+    }
+}
+
+class Match extends Piece {
     private $match;
 
     function __construct(array $match) {
+        parent::__construct($match[0]);
         $this->match = $match;
     }
 
-    function offset($subPattern = 0) {
-        return $this->match[$subPattern][1];
+    function offset($sub = 0) {
+        return $this->sub($sub)->offset();
     }
 
-    function text($subPattern = 0) {
-        return $this->match[$subPattern][0];
+    function text($sub = 0) {
+        return $this->sub($sub)->text();
     }
 
-    function has($subPattern = 0) {
-        return isset($this->match[$subPattern]) && $this->offset($subPattern) != -1;
+    function length($sub = 0) {
+        return $this->sub($sub)->length();
     }
 
-    function length($subPattern = 0) {
-        return strlen($this->text($subPattern));
+    function sub($sub = 0) {
+        return new Piece($this->match[$sub]);
+    }
+
+    function has($sub = 0) {
+        return isset($this->match[$sub]);
     }
 }
 

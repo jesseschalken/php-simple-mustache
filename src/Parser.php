@@ -24,28 +24,24 @@ final class Parser {
         $nodes = array();
 
         while (true) {
-            $openTagRE  = Regex::quote($this->openTag);
-            $closeTagRE = Regex::quote($this->closeTag);
-
-            $match = $this->regex("((?<=\n|^)[ \t]*)?$openTagRE(#|\\^|\\/|\\<|\\>|\\=|\\!|&|\\{|)\\s*");
+            $match = $this->match("((?<=\n|^)[ \t]*)?{$this->quote($this->openTag)}(#|\\^|\\/|\\<|\\>|\\=|\\!|&|\\{|)\\s*");
             if (!$match)
                 break;
 
             $nodes[] = new NodeText($this->remove($match->offset()));
             $this->skip($match->length());
 
-            $isStandalone = $match->has(1) && ($this->lineStart || $match->offset(1) > 0);
-            $spaceBefore  = $match->has(1) ? $match->text(1) : '';
+            $isStandalone = $match->has(1) && $match->offset(1) >= 0 && ($this->lineStart || $match->offset(1) > 0);
+            $spaceBefore  = $match->has(1) && $match->offset(1) >= 0 ? $match->text(1) : '';
             $sigil        = $match->text(2);
-            $closeSigilRE = Regex::quote($sigil === '{' ? '}' : $sigil);
-            $endRegex     = "\\s*($closeSigilRE|)$closeTagRE";
+            $endRegex     = "\\s*({$this->quote($sigil === '{' ? '}' : $sigil)}|){$this->quote($this->closeTag)}";
 
             if ($sigil == '!' || $sigil == '=') {
-                $match   = $this->regex($endRegex);
+                $match   = $this->match($endRegex);
                 $content = $this->remove($match->offset());
                 $this->skip($match->length());
             } else {
-                $match   = $this->regex("^([\\w?!\\/.-]*)$endRegex", 'su');
+                $match   = $this->match("^([\\w?!\\/.-]*)$endRegex", 'su');
                 $content = $match->text(1);
                 $this->skip($match->offset());
                 $this->skip($match->length());
@@ -57,26 +53,25 @@ final class Parser {
                             $sigil != '';
 
             if ($isStandalone) {
-                $match = $this->regex("^[ \t]*(\r?\n|$)");
+                $match = $this->match("^[ \t]*(\r?\n|$)");
                 if (!$match) {
                     $isStandalone = false;
                 } else {
                     $this->skip($match->offset());
                     $this->skip($match->length());
-                    $this->lineStart = true;
                 }
             }
 
             if (!$isStandalone) {
-                $this->lineStart = false;
-                $nodes[]         = new NodeText($spaceBefore);
-                $spaceBefore     = '';
+                $nodes[]     = new NodeText($spaceBefore);
+                $spaceBefore = '';
             }
+
+            $this->lineStart = $isStandalone;
 
             switch ($sigil) {
                 case '=':
-                    $regex = new Regex('^(\\S+)\\s+(\\S+)$', 'su');
-                    $match = $regex->match($content);
+                    $match = Regex::create('^(\\S+)\\s+(\\S+)$', 'su')->match($content);
 
                     $this->openTag  = $match->text(1);
                     $this->closeTag = $match->text(2);
@@ -120,9 +115,8 @@ final class Parser {
         return $nodes;
     }
 
-    private function regex($pattern) {
-        $regex = new Regex($pattern, 'su');
-        return $regex->match($this->string);
+    private function match($pattern) {
+        return Regex::create($pattern, 'su')->match($this->string);
     }
 
     private function remove($len) {
@@ -132,17 +126,21 @@ final class Parser {
     }
 
     private function skip($len) {
-        $this->string = substr($this->string, $len);
+        $this->string = (string)substr($this->string, $len);
     }
 
     private function read($len) {
-        return substr($this->string, 0, $len);
+        return (string)substr($this->string, 0, $len);
     }
 
     private function removeAll() {
         $result       = $this->string;
         $this->string = '';
         return $result;
+    }
+
+    private function quote($text) {
+        return Regex::quote($text);
     }
 }
 
