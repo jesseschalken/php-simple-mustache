@@ -6,26 +6,20 @@ class Value {
     static function reflect($v) {
         if (is_null($v))
             return new self;
-
-        if (is_bool($v))
+        else if (is_bool($v))
             return $v ? new TrueValue : new self;
-
-        if (is_string($v))
+        else if (is_string($v))
             return new StringValue($v);
-
-        if (is_int($v))
+        else if (is_int($v))
             return new StringValue((string)$v);
-
-        if (is_float($v))
+        else if (is_float($v))
             return new StringValue((string)$v);
-
-        if (is_array($v))
+        else if (is_array($v))
             return self::isAssoc($v) ? new ObjectValue($v) : new ListValue($v);
-
-        if (is_object($v))
+        else if (is_object($v))
             return new ObjectValue(get_object_vars($v));
-
-        throw new Exception("Unhandled type: " . gettype($v));
+        else
+            throw new Exception("Unhandled type: " . gettype($v));
     }
 
     private static function isAssoc(array $array) {
