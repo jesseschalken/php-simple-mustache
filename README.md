@@ -11,13 +11,12 @@ use SimpleMustache\PartialsArray;
 
 $document = Document::parse('hello {{user.name}}');
 $value    = Value::reflect(array('user' => array('name' => 'Joe')));
-$partials = new PartialsArray;
 
-print $document->process($value, $partials);
+print $document->process($value, new PartialsArray);
 // => "hello Joe"
 ```
 
-Use `Document::process()` to parse a Mustache template. Then call `->process($value, $partials)` to process it, with an instance of `Value` and `Partials`.
+Use `Document::parse()` to parse a Mustache template. Then call `->process($value, $partials)` to process it, with an instance of `Value` and `Partials`.
 
 You can use `Value::reflect($value)` to create a `Value` from an arbitrary PHP value, or simply extend the `Value` class and override its methods:
 
